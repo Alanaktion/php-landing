@@ -28,7 +28,7 @@ $memory_pct = round($memory/5)*5;
 if(!empty($_GET['json'])) {
 	// CPU requires systat to be installed on unix/linux systems
 	if($windows) {
-		$cpu = trim(preg_replace('/[^0-9]+/','',`wmic cpu get loadpercentage`));
+		$cpu = intval(trim(preg_replace('/[^0-9]+/','',`wmic cpu get loadpercentage`)));
 		$memory_stats = explode(' ',trim(preg_replace('/\s+/',' ',preg_replace('/[^0-9 ]+/','',`systeminfo | findstr Memory`))));
 		$memory = round($memory_stats[4] / $memory_stats[0] * 100);
 	} else {
