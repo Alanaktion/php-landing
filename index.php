@@ -101,7 +101,7 @@ footer {
 <script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
 <script type="text/javascript">
 function update() {
-	$.post('?ajax=1',function(data){
+	$.post('?json=1',function(data){
 		// Update CPU text/pie
 		$('#cpu').text(data.cpu + '%');
 		$('#cpu-pie').attr('class','pie').addClass('pie-' + (Math.round(data.cpu/5)*5));
