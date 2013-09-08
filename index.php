@@ -11,25 +11,25 @@ if($windows) {
 	// Uptime parsing was a mess...
 	$uptime = 'Error';
 	// Assuming C: as the system drive
-	$disk_stats = explode(' ',preg_replace('/\s+/',' ',preg_replace('/^[0-9 ]+/','',`fsutil volume diskfree c:`)));
+	$disk_stats = explode(' ',trim(preg_replace('/\s+/',' ',preg_replace('/[^0-9 ]+/','',`fsutil volume diskfree c:`))));
 	$disk = round($disk_stats[0] / $disk_stats[1] * 100);
 	// Memory checking is slow on Windows, will only set over AJAX to allow page to load faster
 	$memory = 0;
 } else {
 	$uptime = trim(str_replace(" ","",`uptime | grep -o '[0-9]\+ [ydhms]'`));
-	$disk = intval(trim(`df -k | grep /dev/sda | awk ' { print $5 } '`, "%\n"));
+	$disk = trim(intval(trim(`df -k | grep /dev/sda | awk ' { print $5 } '`, "%\n")),'%');
 	$memory = 100 - round(`free | awk '/buffers\/cache/{print $4/($3+$4) * 100.0;}'`);
 }
 
 // Round to nearest multiple of 5 for pie charts
-$disk_pct = round(intval($disk)/5)*5;
+$disk_pct = round($disk/5)*5;
 $memory_pct = round($memory/5)*5;
 
 if(!empty($_GET['json'])) {
 	// CPU requires systat to be installed on unix/linux systems
 	if($windows) {
-		$cpu = preg_replace('/^[0-9]+/','',`wmic cpu get loadpercentage`);
-		$memory_stats = explode(' ',preg_replace('/\s+/',' ',preg_replace('/^[0-9 ]+/','',`systeminfo | findstr Memory`)));
+		$cpu = trim(preg_replace('/[^0-9]+/','',`wmic cpu get loadpercentage`));
+		$memory_stats = explode(' ',trim(preg_replace('/\s+/',' ',preg_replace('/[^0-9 ]+/','',`systeminfo | findstr Memory`))));
 		$memory = round($memory_stats[4] / $memory_stats[0] * 100);
 	} else {
 		if(`which mpstat`) {
@@ -124,7 +124,7 @@ $(document).ready(function(){
 <?php if(!$windows): ?>
 Uptime: <?=$uptime?>&emsp;
 <?php endif; ?>
-Disk usage: <?=$disk?> <span class="pie pie-<?=$disk_pct?>"></span>&emsp;
+Disk usage: <?=$disk?>% <span class="pie pie-<?=$disk_pct?>"></span>&emsp;
 Memory: <span id="memory"><?=$memory?>%</span> <span id="memory-pie" class="pie pie-<?=$memory_pct?>"></span>&emsp;
 CPU: <span id="cpu">&hellip;</span> <span id="cpu-pie" class="pie"></span>
 </footer>
