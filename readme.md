@@ -1,15 +1,15 @@
 # php-landing
 
-## Requirements
+### Requirements
 
 Windows, UNIX, or Linux web server, PHP 5.
 
-UNIX/Linux require the mpstat command to be available for CPU usage to be displayed.
+UNIX/Linux require the mpstat command to be available for CPU usage to be displayed. To install this on Ubuntu, run `sudo apt-get install sysstat`.
 
 Windows systems do not currently display system uptime.
 
-## Installation
+### Installation
 
-Copy index.php and the res/ directory to a web accessible directory on your server.
+Copy index.php and jqknob.js to a web accessible directory on your server.
 
-Set $server_name and $server_desc in index.php to the name and description you would like to have shown on the page.
+If you want to customize the text and appearance, copy the variables from the top of the index.php file to a new file called config.php, and edit them there. This will allow you to update the index.php file in the future without losing your changes.

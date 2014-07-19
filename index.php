@@ -1,7 +1,16 @@
 <?php
 
-$server_name = "";
+// To change these values, create a file called config.php and copy/paste them there.
+$server_name = "Server";
 $server_desc = "";
+$color_bg = "#222";
+$color_name = "#fff";
+$color_text = "#ccc";
+$custom_css = "";
+
+if(is_file("config.php")) {
+	include "config.php";
+}
 
 // Detect Windows systems
 $windows = defined('PHP_WINDOWS_VERSION_MAJOR');
@@ -20,10 +29,6 @@ if($windows) {
 	$disk = trim(intval(trim(`df -k | grep /dev/sda | awk ' { print $5 } '`, "%\n")),'%');
 	$memory = 100 - round(`free | awk '/buffers\/cache/{print $4/($3+$4) * 100.0;}'`);
 }
-
-// Round to nearest multiple of 5 for pie charts
-$disk_pct = round($disk/5)*5;
-$memory_pct = round($memory/5)*5;
 
 if(!empty($_GET['json'])) {
 	// CPU requires systat to be installed on unix/linux systems
@@ -51,8 +56,7 @@ if(!empty($_GET['json'])) {
 <html>
 <head>
 <meta charset="utf-8">
-<title><?=$server_name?></title>
-<link rel="stylesheet" href="res/fonts/piechart.css">
+<title><?php echo $server_name; ?></title>
 <style type="text/css">
 html {
 	height: 100%;
@@ -68,65 +72,82 @@ body {
 	margin-top: -4em;
 	font-family: "Segoe UI Light",'HelveticaNeue-UltraLight','Helvetica Neue UltraLight','Helvetica Neue',"Open Sans","Segoe UI","Tahoma","Verdana","Arial",sans-serif;
 	font-weight: 300;
-	background: #222;
+	background: <?php echo $color_bg; ?>
 }
 h1, p {
 	padding-left: 15%;
 }
 h1 {
-	color: #ccc;
-	color: #fff;
+	color: <?php echo $color_name; ?>;
 	font-weight: 100;
 	font-size: 4em;
 	margin: 0;
 }
 p {
-	color: #999;
-	color: #ccc;
+	color: <?php echo $color_text; ?>;
 	font-size: 2em;
 	margin: 0;
 }
 footer {
+	font-family: "Segoe UI",'Helvetica Neue',"Open Sans","Tahoma","Verdana","Arial",sans-serif;
 	position: absolute;
 	position: fixed;
+	line-height: 40px;
 	bottom: 2em;
 	left: 15%;
-	color: #ccc;
+	color: <?php echo $color_text; ?>;
 }
-.pie {
+
+/* Yes, this is a hack. */
+footer canvas {
 	vertical-align: middle;
-	padding-bottom: 5px;
 }
+footer canvas + input {
+	margin-top: 16px !important;
+	font-size: 12px !important;
+}
+
+/* Begin: Custom CSS */
+<?php echo $custom_css; ?>
+/* End: Custom CSS */
 </style>
-<script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
-<script type="text/javascript">
+<script src="//ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
+<script src="jquery.knob.min.js"></script>
+<script>
 function update() {
-	$.post('?json=1',function(data){
-		// Update CPU text/pie
-		$('#cpu').text(data.cpu + '%');
-		$('#cpu-pie').attr('class','pie').addClass('pie-' + (Math.round(data.cpu/5)*5));
-		// Update memory text/pie
-		$('#memory').text(data.memory + '%');
-		$('#memory-pie').attr('class','pie').addClass('pie-' + (Math.round(data.memory/5)*5));
-		// Check again in 8 seconds
-		window.setTimeout('update()',1000);
+	$.post('<?php echo basename(__FILE__); ?>?json=1', function(data) {
+
+		$('#k-cpu').val(data.cpu).trigger("change");
+		$('#k-memory').val(data.memory).trigger("change");
+
+		window.setTimeout(update, 1000);
+
 	},'json');
 }
-$(document).ready(function(){
+$(document).ready(function() {
 	update();
+	$("#k-disk, #k-memory, #k-cpu").knob({
+		readOnly: true,
+		width: 40,
+		height: 40,
+		thickness: 0.2,
+		fontWeight: 'normal',
+		bgColor: 'rgba(127,127,127,0.08)',
+		fgColor: '<?php echo $color_text; ?>'
+	});
 });
 </script>
 </head>
 <body>
-<h1><?=$server_name?></h1>
-<p><?=$server_desc?></p>
+<h1><?php echo $server_name; ?></h1>
+<p><?php echo $server_desc; ?></p>
 <footer>
-<?php if(!$windows): ?>
-Uptime: <?=$uptime?>&emsp;
-<?php endif; ?>
-Disk usage: <?=$disk?>% <span class="pie pie-<?=$disk_pct?>"></span>&emsp;
-Memory: <span id="memory"><?=$memory?>%</span> <span id="memory-pie" class="pie pie-<?=$memory_pct?>"></span>&emsp;
-CPU: <span id="cpu">&hellip;</span> <span id="cpu-pie" class="pie"></span>
+	<?php if(!$windows) { ?>
+		Uptime: <?php echo $uptime; ?>&emsp;
+	<?php } ?>
+	Disk usage: <input id="k-disk" value="<?php echo $disk; ?>">&emsp;
+	Memory: <input id="k-memory" value="<?php echo $memory; ?>">&emsp;
+	CPU: <input id="k-cpu" value="0">
 </footer>
 </body>
 </html>
