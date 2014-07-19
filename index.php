@@ -132,7 +132,7 @@ $(document).ready(function() {
 		height: 40,
 		thickness: 0.2,
 		fontWeight: 'normal',
-		bgColor: 'rgba(127,127,127,0.08)',
+		bgColor: 'rgba(127,127,127,0.15)',
 		fgColor: '<?php echo $color_text; ?>'
 	});
 });
