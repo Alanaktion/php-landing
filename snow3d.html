@@ -1,0 +1,92 @@
+<!DOCTYPE HTML>
+<html lang="en">
+<head>
+	<title>three.js - particles - random</title>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width; initial-scale=1.0; maximum-scale=1.0; user-scalable=0;"/>
+	<style type="text/css">
+		body {
+			background-color: #ebe4ea;
+			background: url(res/img/snow-lighter.jpg) no-repeat;
+			background-position: center;
+			background-size: cover;
+			margin: 0px;
+			overflow: hidden;
+		}
+		a {
+			color:#0078ff;
+		}
+	</style>
+</head>
+<body onload="init()">
+
+	<script type="text/javascript" src="res/js/ThreeCanvas.js"></script>
+	<script type="text/javascript" src="res/js/Snow.js"></script>
+
+	<script>
+		var SCREEN_WIDTH = window.innerWidth,
+			SCREEN_HEIGHT = window.innerHeight;
+
+		var container,
+			particle,
+			camera,
+			scene,
+			renderer;
+
+		var particles = [],
+			particleImage = new Image();
+
+		particleImage.src = 'res/img/particle.png';
+
+		function init() {
+			container = document.createElement('div');
+			document.body.appendChild(container);
+
+			camera = new THREE.PerspectiveCamera(75, SCREEN_WIDTH / SCREEN_HEIGHT, 1, 10000);
+			camera.position.z = 1000;
+
+			scene = new THREE.Scene();
+			scene.add(camera);
+
+			renderer = new THREE.CanvasRenderer();
+			renderer.setSize(SCREEN_WIDTH, SCREEN_HEIGHT);
+			var material = new THREE.ParticleBasicMaterial({map: new THREE.Texture(particleImage)});
+
+			for (var i = 0; i < 750; i++) {
+				particle = new Particle3D(material);
+				particle.position.x = Math.random() * 2000 - 1000;
+				particle.position.y = Math.random() * 2000 - 1000;
+				particle.position.z = Math.random() * 2000 - 1000;
+				particle.scale.x = particle.scale.y =  1;
+				scene.add(particle);
+				particles.push(particle);
+			}
+
+			container.appendChild(renderer.domElement);
+			setInterval(loop, 1000 / 60);
+		}
+
+		function loop() {
+			for(var i = 0; i < particles.length; i++) {
+				var particle = particles[i];
+				particle.updatePhysics();
+				with(particle.position) {
+					if(y<-1000)
+						y+=2000;
+
+					if(x>1000)
+						x-=2000;
+					else if(x<-1000)
+						x+=2000;
+
+					if(z>1000)
+						z-=2000;
+					else if(z<-1000)
+						z+=2000;
+				}
+			}
+			renderer.render(scene, camera);
+		}
+	</script>
+</body>
+</html>
