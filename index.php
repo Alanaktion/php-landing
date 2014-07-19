@@ -26,7 +26,7 @@ if($windows) {
 	$memory = 0;
 } else {
 	$uptime = trim(str_replace(" ","",`uptime | grep -o '[0-9]\+ [ydhms]'`));
-	$disk = trim(intval(trim(`df -k | grep /dev/sda | awk ' { print $5 } '`, "%\n")),'%');
+	$disk = trim(intval(trim(`df -k | grep /dev/[sv]da | awk ' { print $5 } '`, "%\n")),'%');
 	$memory = 100 - round(`free | awk '/buffers\/cache/{print $4/($3+$4) * 100.0;}'`);
 }
 
