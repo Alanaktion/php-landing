@@ -69,7 +69,7 @@ body {
 	position: absolute;
 	top: 50%;
 	width: 100%;
-	margin-top: -4em;
+	margin: -4em 0 0 0;
 	font-family: "Segoe UI Light",'HelveticaNeue-UltraLight','Helvetica Neue UltraLight','Helvetica Neue',"Open Sans","Segoe UI","Tahoma","Verdana","Arial",sans-serif;
 	font-weight: 300;
 	background: <?php echo $color_bg; ?>
