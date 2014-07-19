@@ -142,7 +142,7 @@ $(document).ready(function() {
 <h1><?php echo $server_name; ?></h1>
 <p><?php echo $server_desc; ?></p>
 <footer>
-	<?php if(!$windows) { ?>
+	<?php if(!$windows && !empty($uptime)) { ?>
 		Uptime: <?php echo $uptime; ?>&emsp;
 	<?php } ?>
 	Disk usage: <input id="k-disk" value="<?php echo $disk; ?>">&emsp;
