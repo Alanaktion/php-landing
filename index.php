@@ -112,7 +112,7 @@ footer canvas + input {
 /* End: Custom CSS */
 </style>
 <script src="//ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
-<script src="jquery.knob.min.js"></script>
+<script src="jqknob.js"></script>
 <script>
 function update() {
 	$.post('<?php echo basename(__FILE__); ?>?json=1', function(data) {
