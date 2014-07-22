@@ -38,10 +38,12 @@ if($windows) {
         $uptime = $hours . "h " . $mins . "m";
     } elseif ($hours == "0" && $mins > "0") {
         $uptime = $mins . "m " . $secs . "s";
+    } elseif ($mins < "0") {
+        $uptime = $secs . "s";
     } else {
         $uptime = "Error retreving uptime.";
     }
-    
+
 	$disk = trim(intval(trim(`df -k | grep /dev/[sv]da | awk ' { print $5 } '`, "%\n")),'%');
 	$memory = 100 - round(`free | awk '/buffers\/cache/{print $4/($3+$4) * 100.0;}'`);
 }
