@@ -25,7 +25,25 @@ if($windows) {
 	// Memory checking is slow on Windows, will only set over AJAX to allow page to load faster
 	$memory = 0;
 } else {
-	$uptime = trim(str_replace(" ","",`uptime | grep -o '[0-9]\+ [ydhms]'`));
+
+    $initial_uptime = shell_exec("cut -d. -f1 /proc/uptime");
+    $days = floor($initial_uptime/60/60/24);
+    $hours = $initial_uptime/60/60%24;
+    $mins = $initial_uptime/60%60;
+    $secs = $initial_uptime%60;
+
+    if($days > "0") {
+        $uptime = $days . "d " . $hours . "h";
+    } elseif ($days == "0" && $hours > "0") {
+        $uptime = $hours . "h " . $mins . "m";
+    } elseif ($hours == "0" && $mins > "0") {
+        $uptime = $mins . "m " . $secs . "s";
+    } elseif ($mins < "0") {
+        $uptime = $secs . "s";
+    } else {
+        $uptime = "Error retreving uptime.";
+    }
+
 	$disk = trim(intval(trim(`df -k | grep /dev/[sv]da | awk ' { print $5 } '`, "%\n")),'%');
 	$memory = 100 - round(`free | awk '/buffers\/cache/{print $4/($3+$4) * 100.0;}'`);
 }
