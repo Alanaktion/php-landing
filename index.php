@@ -30,6 +30,12 @@ if($windows) {
 
 	// Memory checking is slow on Windows, will only set over AJAX to allow page to load faster
 	$memory = 0;
+	$mem_total = 0;
+	$mem_used = 0;
+
+	$swap = 0;
+	$swap_total = 0;
+	$swap_used = 0;
 
 } else {
 
@@ -63,11 +69,18 @@ if($windows) {
 	$disk = intval(rtrim($disk_result[4], "%"));
 
 	// Check current RAM usage
-	$mem_result = `free -mo | grep Mem`;
+	$mem_result = trim(`free -mo | grep Mem`);
 	$mem_result = explode(" ", preg_replace("/\s+/", " ", $mem_result));
 	$mem_total = intval($mem_result[1]);
-	$mem_used = $mem_total - $mem_result[3];
+	$mem_used = $mem_result[1] - $mem_result[6];
 	$memory = round($mem_used / $mem_total * 100);
+
+	// Check current swap usage
+	$swap_result = trim(`free -mo | grep Swap`);
+	$swap_result = explode(" ", preg_replace("/\s+/", " ", $swap_result));
+	$swap_total = $swap_result[1];
+	$swap_used = $swap_result[2];
+	$swap = round($swap_used / $swap_total * 100);
 }
 
 if(!empty($_GET['json'])) {
@@ -137,6 +150,9 @@ if(!empty($_GET['json'])) {
 		'memory' => $memory,
 		'memory_total' => $mem_total,
 		'memory_used' => $mem_used,
+		'swap' => $swap,
+		'swap_total' => $swap_total,
+		'swap_used' => $swap_used,
 	)));
 }
 
