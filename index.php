@@ -52,9 +52,9 @@ if($windows) {
 	}
 
 	// Check disk stats
-	$disk_result = `df -kh | grep /dev/[sv]da`;
+	$disk_result = `df -k | grep /dev/[sv]da`;
 	if(!trim($disk_result)) {
-		$disk_result = `df -kh | grep /dev/simfs`;
+		$disk_result = `df -k | grep /dev/simfs`;
 	}
 	$disk_result = explode(" ", preg_replace("/\s+/", " ", $disk_result));
 
@@ -63,7 +63,11 @@ if($windows) {
 	$disk = intval(rtrim($disk_result[4], "%"));
 
 	// Check current RAM usage
-	$memory = 100 - round(`free | awk '/buffers\/cache/{print $4/($3+$4) * 100.0;}'`);
+	$mem_result = `free -mo | grep Mem`;
+	$mem_result = explode(" ", preg_replace("/\s+/", " ", $mem_result));
+	$mem_total = $mem_result[1];
+	$mem_used = $mem_total - $mem_result[3];
+	$memory = round($mem_used / $mem_total * 100);
 }
 
 if(!empty($_GET['json'])) {
@@ -130,7 +134,9 @@ if(!empty($_GET['json'])) {
 		'disk_used' => $disk_used,
 		'cpu' => $cpu,
 		'num_cpus' => $num_cpus,
-		'memory' => $memory
+		'memory' => $memory,
+		'memory_total' => $mem_total,
+		'memory_used' => $mem_used,
 	)));
 }
 
@@ -216,7 +222,7 @@ $(document).ready(function() {
 		height: 40,
 		thickness: 0.2,
 		fontWeight: 'normal',
-		bgColor: 'rgba(127,127,127,0.15)',
+		bgColor: 'rgba(127,127,127,0.15)', // 50% grey with a low opacity, should work with most backgrounds
 		fgColor: '<?php echo $color_text; ?>'
 	});
 });
