@@ -130,7 +130,7 @@ if(!empty($_GET['json'])) {
 		'num_cpus' => $num_cpus,
 		'memory' => $memory,
 		'raw' => array(
-			'disk' => $disk
+			'disk' => empty($disk_result) ? null : $disk_result
 		)
 	)));
 }
