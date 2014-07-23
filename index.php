@@ -17,32 +17,36 @@ $windows = defined('PHP_WINDOWS_VERSION_MAJOR');
 
 // Get system status
 if($windows) {
+
 	// Uptime parsing was a mess...
 	$uptime = 'Error';
+
 	// Assuming C: as the system drive
 	$disk_stats = explode(' ',trim(preg_replace('/\s+/',' ',preg_replace('/[^0-9 ]+/','',`fsutil volume diskfree c:`))));
 	$disk = round($disk_stats[0] / $disk_stats[1] * 100);
+
 	// Memory checking is slow on Windows, will only set over AJAX to allow page to load faster
 	$memory = 0;
+
 } else {
 
-    $initial_uptime = shell_exec("cut -d. -f1 /proc/uptime");
-    $days = floor($initial_uptime/60/60/24);
-    $hours = $initial_uptime/60/60%24;
-    $mins = $initial_uptime/60%60;
-    $secs = $initial_uptime%60;
+	$initial_uptime = shell_exec("cut -d. -f1 /proc/uptime");
+	$days = floor($initial_uptime / 60 / 60 / 24);
+	$hours = $initial_uptime / 60 / 60 % 24;
+	$mins = $initial_uptime / 60 % 60;
+	$secs = $initial_uptime % 60;
 
-    if($days > "0") {
-        $uptime = $days . "d " . $hours . "h";
-    } elseif ($days == "0" && $hours > "0") {
-        $uptime = $hours . "h " . $mins . "m";
-    } elseif ($hours == "0" && $mins > "0") {
-        $uptime = $mins . "m " . $secs . "s";
-    } elseif ($mins < "0") {
-        $uptime = $secs . "s";
-    } else {
-        $uptime = "Error retreving uptime.";
-    }
+	if($days > "0") {
+		$uptime = $days . "d " . $hours . "h";
+	} elseif ($days == "0" && $hours > "0") {
+		$uptime = $hours . "h " . $mins . "m";
+	} elseif ($hours == "0" && $mins > "0") {
+		$uptime = $mins . "m " . $secs . "s";
+	} elseif ($mins < "0") {
+		$uptime = $secs . "s";
+	} else {
+		$uptime = "Error retreving uptime.";
+	}
 
 	$disk = trim(intval(trim(`df -k | grep /dev/[sv]da | awk ' { print $5 } '`, "%\n")),'%');
 	$memory = 100 - round(`free | awk '/buffers\/cache/{print $4/($3+$4) * 100.0;}'`);
@@ -55,10 +59,20 @@ if(!empty($_GET['json'])) {
 		$memory_stats = explode(' ',trim(preg_replace('/\s+/',' ',preg_replace('/[^0-9 ]+/','',`systeminfo | findstr Memory`))));
 		$memory = round($memory_stats[4] / $memory_stats[0] * 100);
 	} else {
-		if(`which mpstat`) {
+		// Use simplest function possible
+		if(function_exists("sys_getloadavg")) {
+			$load = sys_getloadavg();
+			$cpu = $load[0];
+		} elseif(`which uptime`) {
+			$str = substr(strrchr(`uptime`,":"),1);
+			$avs = array_map("trim",explode(",",$str));
+			$cpu = $avs[0] * 100;
+		} elseif(`which mpstat`) {
 			$cpu = 100 - round(`mpstat 1 2 | tail -n 1 | sed 's/.*\([0-9\.+]\{5\}\)$/\\1/'`);
 		} else {
 			$cpu = 0;
+			$output = `cat /proc/loadavg`;
+			$cpu = substr($output,0,strpos($output," "));
 		}
 	}
 	exit(json_encode(array(
@@ -135,6 +149,7 @@ footer canvas + input {
 function update() {
 	$.post('<?php echo basename(__FILE__); ?>?json=1', function(data) {
 
+		$('#uptime').text(data.uptime);
 		$('#k-cpu').val(data.cpu).trigger("change");
 		$('#k-memory').val(data.memory).trigger("change");
 
@@ -151,7 +166,10 @@ $(document).ready(function() {
 		thickness: 0.2,
 		fontWeight: 'normal',
 		bgColor: 'rgba(127,127,127,0.15)',
-		fgColor: '<?php echo $color_text; ?>'
+		fgColor: '<?php echo $color_text; ?>',
+		format: function(v) {
+			return v + '%';
+		}
 	});
 });
 </script>
@@ -161,7 +179,7 @@ $(document).ready(function() {
 <p><?php echo $server_desc; ?></p>
 <footer>
 	<?php if(!$windows && !empty($uptime)) { ?>
-		Uptime: <?php echo $uptime; ?>&emsp;
+		Uptime: <span id="uptime"><?php echo $uptime; ?></span>&emsp;
 	<?php } ?>
 	Disk usage: <input id="k-disk" value="<?php echo $disk; ?>">&emsp;
 	Memory: <input id="k-memory" value="<?php echo $memory; ?>">&emsp;
