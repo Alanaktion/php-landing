@@ -25,6 +25,9 @@ if($windows) {
 	$disk_stats = explode(' ',trim(preg_replace('/\s+/',' ',preg_replace('/[^0-9 ]+/','',`fsutil volume diskfree c:`))));
 	$disk = round($disk_stats[0] / $disk_stats[1] * 100);
 
+	$disk_total = '';
+	$disk_used = '';
+
 	// Memory checking is slow on Windows, will only set over AJAX to allow page to load faster
 	$memory = 0;
 
@@ -48,37 +51,83 @@ if($windows) {
 		$uptime = "Error retreving uptime.";
 	}
 
-	$disk = trim(intval(trim(`df -k | grep /dev/[sv]da | awk ' { print $5 } '`, "%\n")),'%');
+	// Check disk stats
+	$disk_result = `df -kh | grep /dev/[sv]da`;
+	if($disk_result === '') {
+		$disk_result = `df -kh | grep /dev/simfs`;
+	}
+	$disk_result = explode(" ", preg_replace("/\\s+/", " ", $disk_result));
+
+	$disk_total = $disk_result[1];
+	$disk_used = $disk_result[2];
+	$disk = intval(rtrim($disk_result[4], "%"));
+
+	// Check current RAM usage
 	$memory = 100 - round(`free | awk '/buffers\/cache/{print $4/($3+$4) * 100.0;}'`);
 }
 
 if(!empty($_GET['json'])) {
-	// CPU requires systat to be installed on unix/linux systems
+
+	// Determine number of CPUs
+	$num_cpus = 1;
+	if (is_file('/proc/cpuinfo')) {
+		$cpuinfo = file_get_contents('/proc/cpuinfo');
+		preg_match_all('/^processor/m', $cpuinfo, $matches);
+		$num_cpus = count($matches[0]);
+	} else if ('WIN' == strtoupper(substr(PHP_OS, 0, 3))) {
+		$process = @popen('wmic cpu get NumberOfCores', 'rb');
+		if (false !== $process) {
+			fgets($process);
+			$num_cpus = intval(fgets($process));
+			pclose($process);
+		}
+	} else {
+		$process = @popen('sysctl -a', 'rb');
+		if (false !== $process) {
+			$output = stream_get_contents($process);
+			preg_match('/hw.ncpu: (\d+)/', $output, $matches);
+			if ($matches) {
+				$num_cpus = intval($matches[1][0]);
+			}
+			pclose($process);
+		}
+	}
+
 	if($windows) {
+
+		// Get stats for Windows
 		$cpu = intval(trim(preg_replace('/[^0-9]+/','',`wmic cpu get loadpercentage`)));
 		$memory_stats = explode(' ',trim(preg_replace('/\s+/',' ',preg_replace('/[^0-9 ]+/','',`systeminfo | findstr Memory`))));
 		$memory = round($memory_stats[4] / $memory_stats[0] * 100);
+
 	} else {
-		// Use simplest function possible
+
+		// Get stats for linux using simplest possible methods
 		if(function_exists("sys_getloadavg")) {
 			$load = sys_getloadavg();
-			$cpu = $load[0];
+			$cpu = $load[0] * 100 / $num_cpus;
 		} elseif(`which uptime`) {
 			$str = substr(strrchr(`uptime`,":"),1);
 			$avs = array_map("trim",explode(",",$str));
-			$cpu = $avs[0] * 100;
+			$cpu = $avs[0] * 100 / $num_cpus;
 		} elseif(`which mpstat`) {
 			$cpu = 100 - round(`mpstat 1 2 | tail -n 1 | sed 's/.*\([0-9\.+]\{5\}\)$/\\1/'`);
-		} else {
+		} elseif(is_file('/proc/loadavg')) {
 			$cpu = 0;
 			$output = `cat /proc/loadavg`;
 			$cpu = substr($output,0,strpos($output," "));
+		} else {
+			$cpu = 0;
 		}
+
 	}
 	exit(json_encode(array(
 		'uptime' => $uptime,
 		'disk' => $disk,
+		'disk_total' => $disk_total,
+		'disk_used' => $disk_used,
 		'cpu' => $cpu,
+		'num_cpus' => $num_cpus,
 		'memory' => $memory,
 	)));
 }
@@ -166,10 +215,7 @@ $(document).ready(function() {
 		thickness: 0.2,
 		fontWeight: 'normal',
 		bgColor: 'rgba(127,127,127,0.15)',
-		fgColor: '<?php echo $color_text; ?>',
-		format: function(v) {
-			return v + '%';
-		}
+		fgColor: '<?php echo $color_text; ?>'
 	});
 });
 </script>
