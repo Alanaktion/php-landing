@@ -273,6 +273,7 @@ function update() {
 		// Update details
 		$('#dt-disk-used').text(Math.round(data.disk_used / 10.24) / 100);
 		$('#dt-mem-used').text(data.memory_used);
+		$('#dt-num-cpus').text(data.num_cpus);
 
 		window.setTimeout(update, 3000);
 
@@ -327,7 +328,7 @@ $(document).ready(function() {
 	<div class="right">
 		<b>Disk:</b> <span id="dt-disk-used"><?php echo round($disk_used / 1024, 2); ?></span> GB / <?php echo round($disk_total / 1024, 2); ?> GB<br>
 		<b>Memory:</b> <span id="dt-mem-used"><?php echo $mem_used; ?></span> MB / <?php echo $mem_total; ?> MB<br>
-		<b>CPU Cores:</b> <?php echo $num_cpus; ?>
+		<b>CPU Cores:</b> <span id="dt-num-cpus"></span>
 	</div>
 </dialog>
 </body>
