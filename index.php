@@ -53,10 +53,10 @@ if($windows) {
 
 	// Check disk stats
 	$disk_result = `df -kh | grep /dev/[sv]da`;
-	if($disk_result === '') {
+	if(!trim($disk_result)) {
 		$disk_result = `df -kh | grep /dev/simfs`;
 	}
-	$disk_result = explode(" ", preg_replace("/\\s+/", " ", $disk_result));
+	$disk_result = explode(" ", preg_replace("/\s+/", " ", $disk_result));
 
 	$disk_total = $disk_result[1];
 	$disk_used = $disk_result[2];
@@ -128,10 +128,7 @@ if(!empty($_GET['json'])) {
 		'disk_used' => $disk_used,
 		'cpu' => $cpu,
 		'num_cpus' => $num_cpus,
-		'memory' => $memory,
-		'raw' => array(
-			'disk' => empty($disk_result) ? null : $disk_result
-		)
+		'memory' => $memory
 	)));
 }
 
