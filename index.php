@@ -286,11 +286,17 @@ function update() {
 		$('#uptime').text(data.uptime);
 		$('#k-cpu').val(data.cpu).trigger("change");
 		$('#k-memory').val(data.memory).trigger("change");
+        <?php if($swap_total !== "0") { ?>
+        $('#k-swap').val(data.swap).trigger("change");
+        <?php } ?>
 
 		// Update details
 		$('#dt-disk-used').text(Math.round(data.disk_used / 10.24) / 100);
 		$('#dt-mem-used').text(data.memory_used);
 		$('#dt-num-cpus').text(data.num_cpus);
+        <?php if($swap_total !== "0") { ?>
+        $('#dt-swap_used').text(data.swap_used);
+        <?php } ?>
 
 		window.setTimeout(update, 3000);
 
@@ -298,7 +304,7 @@ function update() {
 }
 $(document).ready(function() {
 	// Show ring charts
-	$("#k-disk, #k-memory, #k-cpu").knob({
+	$("#k-disk, #k-memory, #k-swap, #k-cpu").knob({
 		readOnly: true,
 		width: 40,
 		height: 40,
@@ -334,6 +340,9 @@ $(document).ready(function() {
 	<?php } ?>
 	Disk usage: <input id="k-disk" value="<?php echo $disk; ?>">&emsp;
 	Memory: <input id="k-memory" value="<?php echo $memory; ?>">&emsp;
+    <?php if($swap_total !== "0") { ?>
+        Swap: <input id="k-swap" value="<?php echo $swap; ?>">&emsp;
+    <?php } ?>
 	CPU: <input id="k-cpu" value="0">
 	<a class="right" id="detail">Detail</a>
 </footer>
@@ -345,6 +354,11 @@ $(document).ready(function() {
 	<div class="right">
 		<b>Disk:</b> <span id="dt-disk-used"><?php echo round($disk_used / 1024, 2); ?></span> GB / <?php echo round($disk_total / 1024, 2); ?> GB<br>
 		<b>Memory:</b> <span id="dt-mem-used"><?php echo $mem_used; ?></span> MB / <?php echo $mem_total; ?> MB<br>
+        <?php if($swap_total !== "0") { ?>
+            <b>Swap:</b> <span id="dt-swap-used"><?php echo $swap_used ?></span> MB / <?php echo $swap_total ?> MB<br>
+        <?php } else { ?>
+            <b>Swap:</b> N/A<br>
+        <?php }?>
 		<b>CPU Cores:</b> <span id="dt-num-cpus"></span>
 	</div>
 </dialog>
