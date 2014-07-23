@@ -221,7 +221,7 @@ dialog {
 	bottom: 0;
 	left: 0;
 	width: 100%;
-	height: 86px;
+	height: 100px;
 
 	padding: 1em 15%;
 
@@ -231,17 +231,17 @@ dialog {
 	-moz-box-sizing: border-box;
 	box-sizing: border-box;
 
-	-webkit-transform: translateY(88px);
-	transform: translateY(88px);
-	-webkit-transition: -webkit-transform .3s ease-out;
-	transition: transform .3s ease-out;
+	-webkit-transform: translateY(100px);
+	transform: translateY(100px);
+	-webkit-transition: -webkit-transform .2s cubic-bezier(.12, .55, .20, .80);
+	transition: transform .2s cubic-bezier(.12, .55, .20, .80);
 }
 dialog.open {
 	-webkit-transform: translateY(0);
 	transform: translateY(0);
 }
 dialog h2 {
-	color: <?php echo $color_name; ?>;
+	color: <?php echo $color_bg; ?>;
 	font-size: 2em;
 	margin: 0;
 }
