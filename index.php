@@ -322,7 +322,7 @@ $(document).ready(function() {
 </footer>
 <dialog>
 	<div class="left">
-		<h2><?php echo $_SERVER['SERVER_NAME']; ?></h2>
+		<h2><?php echo $windows ? $_SERVER['SERVER_NAME'] : `hostname -f`; ?></h2>
 		<?php echo $_SERVER['SERVER_ADDR']; ?>
 	</div>
 	<div class="right">
