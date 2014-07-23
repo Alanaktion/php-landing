@@ -121,6 +121,8 @@ if(!empty($_GET['json'])) {
 		}
 
 	}
+
+	header("Content-type: application/json");
 	exit(json_encode(array(
 		'uptime' => $uptime,
 		'disk' => $disk,
