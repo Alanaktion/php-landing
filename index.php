@@ -217,7 +217,7 @@ footer {
 dialog {
 	z-index: 2;
 	position: absolute;
-	top: 100%;
+	bottom: 0;
 	left: 0;
 	width: 100%;
 	height: 86px;
@@ -292,13 +292,13 @@ $(document).ready(function() {
 	update();
 	//
 	$('#detail').click(function(e) {
-		$('dialog').toggleClass('in');
-		if($('dialog').hasClass('in')) {
+		$('dialog').toggleClass('open');
+		if($('dialog').hasClass('open')) {
 			$('<div />').addClass('overlay').appendTo('body');
 		}
 	});
 	$('body').on('click', '.overlay', function(e) {
-		$('dialog').removeClass('in');
+		$('dialog').removeClass('open');
 		$('.overlay').remove();
 	});
 });
