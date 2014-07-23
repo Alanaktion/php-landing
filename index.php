@@ -202,6 +202,7 @@ footer {
 	line-height: 40px;
 	bottom: 2em;
 	left: 15%;
+	width: 70%;
 	color: <?php echo $color_text; ?>;
 }
 .overlay {
@@ -319,15 +320,15 @@ $(document).ready(function() {
 	<a class="right" id="detail">Detail</a>
 </footer>
 <dialog>
-	<p class="left">
+	<div class="left">
 		<h2><?php echo $_SERVER['SERVER_NAME']; ?></h2>
 		<?php echo $_SERVER['SERVER_ADDR']; ?>
-	</p>
-	<p class="right">
+	</div>
+	<div class="right">
 		<b>Disk:</b> <span id="dt-disk-used"><?php echo round($disk_used / 1024, 2); ?></span> GB / <?php echo round($disk_total / 1024, 2); ?> GB<br>
 		<b>Memory:</b> <span id="dt-mem-used"><?php echo $mem_used; ?></span> MB / <?php echo $mem_total; ?> MB<br>
 		<b>CPU Cores:</b> <?php echo $num_cpus; ?>
-	</p>
+	</div>
 </dialog>
 </body>
 </html>
