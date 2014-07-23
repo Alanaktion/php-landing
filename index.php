@@ -242,6 +242,7 @@ dialog.open {
 }
 dialog h2 {
 	color: <?php echo $color_bg; ?>;
+	font-weight: 100;
 	font-size: 2em;
 	margin: 0;
 }
