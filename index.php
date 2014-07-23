@@ -65,7 +65,7 @@ if($windows) {
 	// Check current RAM usage
 	$mem_result = `free -mo | grep Mem`;
 	$mem_result = explode(" ", preg_replace("/\s+/", " ", $mem_result));
-	$mem_total = $mem_result[1];
+	$mem_total = intval($mem_result[1]);
 	$mem_used = $mem_total - $mem_result[3];
 	$memory = round($mem_used / $mem_total * 100);
 }
