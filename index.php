@@ -129,6 +129,9 @@ if(!empty($_GET['json'])) {
 		'cpu' => $cpu,
 		'num_cpus' => $num_cpus,
 		'memory' => $memory,
+		'raw' => array(
+			'disk' => $disk
+		)
 	)));
 }
 
