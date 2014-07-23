@@ -147,21 +147,22 @@ if(!empty($_GET['json'])) {
 <meta charset="utf-8">
 <title><?php echo $server_name; ?></title>
 <style type="text/css">
-html {
+html,body {
 	height: 100%;
-}
-html, body {
 	margin: 0;
 	padding: 0;
 }
 body {
-	position: absolute;
-	top: 50%;
-	width: 100%;
-	margin: -4em 0 0 0;
 	font-family: "Segoe UI Light",'HelveticaNeue-UltraLight','Helvetica Neue UltraLight','Helvetica Neue',"Open Sans","Segoe UI","Tahoma","Verdana","Arial",sans-serif;
 	font-weight: 300;
-	background: <?php echo $color_bg; ?>
+	background: <?php echo $color_bg; ?>;
+	overflow: hidden;
+}
+section {
+    position: absolute;
+    top: 50%;
+    width: 100%;
+    margin-top: -4em;
 }
 h1, p {
 	padding-left: 15%;
@@ -177,6 +178,23 @@ p {
 	font-size: 2em;
 	margin: 0;
 }
+a, a:link, a:visited {
+	color: <?php echo $color_name; ?>;
+	text-decoration: none;
+	cursor: pointer;
+}
+a:hover, a:focus, a:active {
+	color: <?php echo $color_name; ?>;
+	text-decoration: underline;
+}
+.left {
+	text-align: left;
+	float: left;
+}
+.right {
+	text-align: right;
+	float: right;
+}
 footer {
 	font-family: "Segoe UI",'Helvetica Neue',"Open Sans","Tahoma","Verdana","Arial",sans-serif;
 	position: absolute;
@@ -185,6 +203,46 @@ footer {
 	bottom: 2em;
 	left: 15%;
 	color: <?php echo $color_text; ?>;
+}
+.overlay {
+	z-index: 1;
+	position: absolute;
+	top: 0;
+	left: 0;
+	width: 100%;
+	height: 100%;
+	background-color: black;
+	opacity: 0.3;
+}
+dialog {
+	z-index: 2;
+	position: absolute;
+	top: 100%;
+	left: 0;
+	width: 100%;
+	height: 86px;
+
+	padding: 1em 15%;
+
+	background-color: <?php echo $color_text; ?>;
+	color: <?php echo $color_bg; ?>;
+
+	-moz-box-sizing: border-box;
+	box-sizing: border-box;
+
+	-webkit-transform: translateY(88px);
+	transform: translateY(88px);
+	-webkit-transition: -webkit-transform .3s ease-out;
+	transition: transform .3s ease-out;
+}
+dialog.open {
+	-webkit-transform: translateY(0);
+	transform: translateY(0);
+}
+dialog h2 {
+	color: <?php echo $color_name; ?>;
+	font-size: 2em;
+	margin: 0;
 }
 
 /* Yes, this is a hack. */
@@ -206,16 +264,21 @@ footer canvas + input {
 function update() {
 	$.post('<?php echo basename(__FILE__); ?>?json=1', function(data) {
 
+		// Update footer
 		$('#uptime').text(data.uptime);
 		$('#k-cpu').val(data.cpu).trigger("change");
 		$('#k-memory').val(data.memory).trigger("change");
 
-		window.setTimeout(update, 1000);
+		// Update details
+		$('#dt-disk-used').text(Math.round(data.disk_used / 10.24) / 100);
+		$('#dt-mem-used').text(data.memory_used);
+
+		window.setTimeout(update, 3000);
 
 	},'json');
 }
 $(document).ready(function() {
-	update();
+	// Show ring charts
 	$("#k-disk, #k-memory, #k-cpu").knob({
 		readOnly: true,
 		width: 40,
@@ -225,12 +288,27 @@ $(document).ready(function() {
 		bgColor: 'rgba(127,127,127,0.15)', // 50% grey with a low opacity, should work with most backgrounds
 		fgColor: '<?php echo $color_text; ?>'
 	});
+	// Start AJAX update loop
+	update();
+	//
+	$('#detail').click(function(e) {
+		$('dialog').toggleClass('in');
+		if($('dialog').hasClass('in')) {
+			$('<div />').addClass('overlay').appendTo('body');
+		}
+	});
+	$('body').on('click', '.overlay', function(e) {
+		$('dialog').removeClass('in');
+		$('.overlay').remove();
+	});
 });
 </script>
 </head>
 <body>
-<h1><?php echo $server_name; ?></h1>
-<p><?php echo $server_desc; ?></p>
+<section>
+	<h1><?php echo $server_name; ?></h1>
+	<p><?php echo $server_desc; ?></p>
+</section>
 <footer>
 	<?php if(!$windows && !empty($uptime)) { ?>
 		Uptime: <span id="uptime"><?php echo $uptime; ?></span>&emsp;
@@ -238,6 +316,18 @@ $(document).ready(function() {
 	Disk usage: <input id="k-disk" value="<?php echo $disk; ?>">&emsp;
 	Memory: <input id="k-memory" value="<?php echo $memory; ?>">&emsp;
 	CPU: <input id="k-cpu" value="0">
+	<a class="right" id="detail">Detail</a>
 </footer>
+<dialog>
+	<p class="left">
+		<h2><?php echo $_SERVER['SERVER_NAME']; ?></h2>
+		<?php echo $_SERVER['SERVER_ADDR']; ?>
+	</p>
+	<p class="right">
+		<b>Disk:</b> <span id="dt-disk-used"><?php echo round($disk_used / 1024, 2); ?></span> GB / <?php echo round($disk_total / 1024, 2); ?> GB<br>
+		<b>Memory:</b> <span id="dt-mem-used"><?php echo $mem_used; ?></span> MB / <?php echo $mem_total; ?> MB<br>
+		<b>CPU Cores:</b> <?php echo $num_cpus; ?>
+	</p>
+</dialog>
 </body>
 </html>
