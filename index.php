@@ -58,8 +58,8 @@ if($windows) {
 	}
 	$disk_result = explode(" ", preg_replace("/\s+/", " ", $disk_result));
 
-	$disk_total = $disk_result[1];
-	$disk_used = $disk_result[2];
+	$disk_total = intval($disk_result[1]);
+	$disk_used = intval($disk_result[2]);
 	$disk = intval(rtrim($disk_result[4], "%"));
 
 	// Check current RAM usage
