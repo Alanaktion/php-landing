@@ -58,9 +58,9 @@ if($windows) {
 	}
 
 	// Check disk stats
-	$disk_result = `df -k | grep /dev/[sv]da`;
+	$disk_result = `df -P | grep /$`;
 	if(!trim($disk_result)) {
-		$disk_result = `df -k | grep /dev/simfs`;
+		$disk_result = `df -P | grep /$`;
 	}
 	$disk_result = explode(" ", preg_replace("/\s+/", " ", $disk_result));
 
@@ -175,10 +175,10 @@ body {
 	overflow: hidden;
 }
 section {
-    position: absolute;
-    top: 50%;
-    width: 100%;
-    margin-top: -4em;
+	position: absolute;
+	top: 50%;
+	width: 100%;
+	margin-top: -4em;
 }
 h1, p {
 	padding-left: 15%;
@@ -237,7 +237,7 @@ dialog {
 	bottom: 0;
 	left: 0;
 	width: 100%;
-	height: 100px;
+	min-height: 100px;
 
 	padding: 1em 15%;
 
@@ -247,8 +247,8 @@ dialog {
 	-moz-box-sizing: border-box;
 	box-sizing: border-box;
 
-	-webkit-transform: translateY(100px);
-	transform: translateY(100px);
+	-webkit-transform: translateY(130px);
+	transform: translateY(130px);
 	-webkit-transition: -webkit-transform .2s cubic-bezier(.12, .55, .20, .80);
 	transition: transform .2s cubic-bezier(.12, .55, .20, .80);
 }
@@ -286,17 +286,17 @@ function update() {
 		$('#uptime').text(data.uptime);
 		$('#k-cpu').val(data.cpu).trigger("change");
 		$('#k-memory').val(data.memory).trigger("change");
-        <?php if($swap_total !== "0") { ?>
-        $('#k-swap').val(data.swap).trigger("change");
-        <?php } ?>
+		if(data.swap_total) {
+			$('#k-swap').val(data.swap).trigger("change");
+		}
 
 		// Update details
-		$('#dt-disk-used').text(Math.round(data.disk_used / 10.24) / 100);
+		$('#dt-disk-used').text(Math.round(data.disk_used / 10485.76) / 100);
 		$('#dt-mem-used').text(data.memory_used);
 		$('#dt-num-cpus').text(data.num_cpus);
-        <?php if($swap_total !== "0") { ?>
-        $('#dt-swap_used').text(data.swap_used);
-        <?php } ?>
+		if(data.swap_total) {
+			$('#dt-swap_used').text(data.swap_used);
+		}
 
 		window.setTimeout(update, 3000);
 
@@ -340,9 +340,9 @@ $(document).ready(function() {
 	<?php } ?>
 	Disk usage: <input id="k-disk" value="<?php echo $disk; ?>">&emsp;
 	Memory: <input id="k-memory" value="<?php echo $memory; ?>">&emsp;
-    <?php if($swap_total !== "0") { ?>
-        Swap: <input id="k-swap" value="<?php echo $swap; ?>">&emsp;
-    <?php } ?>
+	<?php if($swap_total !== "0") { ?>
+		Swap: <input id="k-swap" value="<?php echo $swap; ?>">&emsp;
+	<?php } ?>
 	CPU: <input id="k-cpu" value="0">
 	<a class="right" id="detail">Detail</a>
 </footer>
@@ -352,13 +352,13 @@ $(document).ready(function() {
 		<?php echo $_SERVER['SERVER_ADDR']; ?>
 	</div>
 	<div class="right">
-		<b>Disk:</b> <span id="dt-disk-used"><?php echo round($disk_used / 1024, 2); ?></span> GB / <?php echo round($disk_total / 1024, 2); ?> GB<br>
-		<b>Memory:</b> <span id="dt-mem-used"><?php echo $mem_used; ?></span> MB / <?php echo (512 * round(round($mem_total) / 512)); ?> MB<br>
-        <?php if($swap_total !== "0") { ?>
-            <b>Swap:</b> <span id="dt-swap-used"><?php echo $swap_used ?></span> MB / <?php echo $swap_total ?> MB<br>
-        <?php } else { ?>
-            <b>Swap:</b> N/A<br>
-        <?php }?>
+		<b>Disk:</b> <span id="dt-disk-used"><?php echo round($disk_used / 1048576, 2); ?></span> GB / <?php echo round($disk_total / 1048576, 2); ?> GB<br>
+		<b>Memory:</b> <span id="dt-mem-used"><?php echo $mem_used; ?></span> MB / <?php echo $mem_total; ?> MB<br>
+		<?php if($swap_total !== "0") { ?>
+			<b>Swap:</b> <span id="dt-swap-used"><?php echo $swap_used ?></span> MB / <?php echo $swap_total ?> MB<br>
+		<?php } else { ?>
+			<b>Swap:</b> N/A<br>
+		<?php }?>
 		<b>CPU Cores:</b> <span id="dt-num-cpus"></span>
 	</div>
 </dialog>
