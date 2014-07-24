@@ -58,9 +58,9 @@ if($windows) {
 	}
 
 	// Check disk stats
-	$disk_result = `df -P | grep /dev/[sv]da`;
+	$disk_result = `df -P | grep /$`;
 	if(!trim($disk_result)) {
-		$disk_result = `df -P | grep /dev/simfs`;
+		$disk_result = `df -P | grep /$`;
 	}
 	$disk_result = explode(" ", preg_replace("/\s+/", " ", $disk_result));
 
