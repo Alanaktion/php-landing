@@ -249,8 +249,8 @@ dialog {
 
 	-webkit-transform: translateY(130px);
 	transform: translateY(130px);
-	-webkit-transition: -webkit-transform .2s cubic-bezier(.12, .55, .20, .80);
-	transition: transform .2s cubic-bezier(.12, .55, .20, .80);
+	-webkit-transition: -webkit-transform .2s cubic-bezier(.15,.75,.55,1);
+	transition: transform .2s cubic-bezier(.15,.75,.55,1);
 }
 dialog.open {
 	-webkit-transform: translateY(0);
