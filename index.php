@@ -237,7 +237,7 @@ dialog {
 	bottom: 0;
 	left: 0;
 	width: 100%;
-	height: 100px;
+	min-height: 100px;
 
 	padding: 1em 15%;
 
@@ -247,8 +247,8 @@ dialog {
 	-moz-box-sizing: border-box;
 	box-sizing: border-box;
 
-	-webkit-transform: translateY(100px);
-	transform: translateY(100px);
+	-webkit-transform: translateY(130px);
+	transform: translateY(130px);
 	-webkit-transition: -webkit-transform .2s cubic-bezier(.12, .55, .20, .80);
 	transition: transform .2s cubic-bezier(.12, .55, .20, .80);
 }
