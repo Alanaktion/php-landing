@@ -349,6 +349,14 @@ $(document).ready(function() {
 <dialog>
 	<div class="left">
 		<h2><?php echo $windows ? $_SERVER['SERVER_NAME'] : `hostname -f`; ?></h2>
+		<?php
+			if(!$windows) {
+				$version_cmd = shell_exec("cat /etc/issue");
+				$version_arr = explode("\\", $version_cmd);
+				$version = $version_arr[0];
+				echo $version, "<br>";
+			}
+		?>
 		<?php echo $_SERVER['SERVER_ADDR']; ?>
 	</div>
 	<div class="right">
