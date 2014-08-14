@@ -261,6 +261,7 @@ dialog h2 {
 	font-weight: 100;
 	font-size: 2em;
 	margin: 0;
+	line-height: 1.3;
 }
 
 /* Yes, this is a hack. */
