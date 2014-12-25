@@ -4,7 +4,7 @@
 
 Windows, UNIX, or Linux web server, PHP 5.
 
-UNIX/Linux require the mpstat command to be available for CPU usage to be displayed. To install this on Ubuntu, run `sudo apt-get install sysstat`.
+Linux systems show the most accurate CPU information if the mpstat command is available. To install this on Ubuntu, run `sudo apt-get install sysstat`.
 
 Windows systems do not currently display system uptime.
 
