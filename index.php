@@ -239,6 +239,7 @@ dialog {
 	width: 100%;
 	min-height: 100px;
 
+	border: none;
 	padding: 1em 15%;
 
 	background-color: <?php echo $color_text; ?>;
@@ -252,7 +253,7 @@ dialog {
 	-webkit-transition: -webkit-transform .2s cubic-bezier(.15,.75,.55,1);
 	transition: transform .2s cubic-bezier(.15,.75,.55,1);
 }
-dialog.open {
+dialog[open] {
 	-webkit-transform: translateY(0);
 	transform: translateY(0);
 }
@@ -318,13 +319,11 @@ $(document).ready(function() {
 	update();
 	//
 	$('#detail').click(function(e) {
-		$('dialog').toggleClass('open');
-		if($('dialog').hasClass('open')) {
-			$('<div />').addClass('overlay').appendTo('body');
-		}
+		$('dialog').prop('open', true);
+		$('<div />').addClass('overlay').appendTo('body');
 	});
 	$('body').on('click', '.overlay', function(e) {
-		$('dialog').removeClass('open');
+		$('dialog').prop('open', false);
 		$('.overlay').remove();
 	});
 });
