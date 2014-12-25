@@ -13,20 +13,20 @@ if(is_file("config.php")) {
 }
 
 // Detect Windows systems
-$windows = defined('PHP_WINDOWS_VERSION_MAJOR');
+$windows = defined("PHP_WINDOWS_VERSION_MAJOR");
 
 // Get system status
 if($windows) {
 
 	// Uptime parsing was a mess...
-	$uptime = 'Error';
+	$uptime = "Error";
 
 	// Assuming C: as the system drive
-	$disk_stats = explode(' ',trim(preg_replace('/\s+/',' ',preg_replace('/[^0-9 ]+/','',shell_exec("fsutil volume diskfree c:")))));
+	$disk_stats = explode(" ",trim(preg_replace("/\s+/"," ",preg_replace("/[^0-9 ]+/","",shell_exec("fsutil volume diskfree c:")))));
 	$disk = round($disk_stats[0] / $disk_stats[1] * 100);
 
-	$disk_total = '';
-	$disk_used = '';
+	$disk_total = "";
+	$disk_used = "";
 
 	// Memory checking is slow on Windows, will only set over AJAX to allow page to load faster
 	$memory = 0;
@@ -80,26 +80,26 @@ if($windows) {
 	$swap = round($swap_used / $swap_total * 100);
 }
 
-if(!empty($_GET['json'])) {
+if(!empty($_GET["json"])) {
 
 	// Determine number of CPUs
 	$num_cpus = 1;
-	if (is_file('/proc/cpuinfo')) {
-		$cpuinfo = file_get_contents('/proc/cpuinfo');
-		preg_match_all('/^processor/m', $cpuinfo, $matches);
+	if (is_file("/proc/cpuinfo")) {
+		$cpuinfo = file_get_contents("/proc/cpuinfo");
+		preg_match_all("/^processor/m", $cpuinfo, $matches);
 		$num_cpus = count($matches[0]);
-	} else if ('WIN' == strtoupper(substr(PHP_OS, 0, 3))) {
-		$process = @popen('wmic cpu get NumberOfCores', 'rb');
+	} else if ("WIN" == strtoupper(substr(PHP_OS, 0, 3))) {
+		$process = @popen("wmic cpu get NumberOfCores", "rb");
 		if (false !== $process) {
 			fgets($process);
 			$num_cpus = intval(fgets($process));
 			pclose($process);
 		}
 	} else {
-		$process = @popen('sysctl -a', 'rb');
+		$process = @popen("sysctl -a", "rb");
 		if (false !== $process) {
 			$output = stream_get_contents($process);
-			preg_match('/hw.ncpu: (\d+)/', $output, $matches);
+			preg_match("/hw.ncpu: (\d+)/", $output, $matches);
 			if ($matches) {
 				$num_cpus = intval($matches[1][0]);
 			}
@@ -110,23 +110,23 @@ if(!empty($_GET['json'])) {
 	if($windows) {
 
 		// Get stats for Windows
-		$cpu = intval(trim(preg_replace('/[^0-9]+/','',shell_exec("wmic cpu get loadpercentage"))));
-		$memory_stats = explode(' ',trim(preg_replace('/\s+/',' ',preg_replace('/[^0-9 ]+/','',shell_exec("systeminfo | findstr Memory")))));
+		$cpu = intval(trim(preg_replace("/[^0-9]+/","",shell_exec("wmic cpu get loadpercentage"))));
+		$memory_stats = explode(' ',trim(preg_replace("/\s+/"," ",preg_replace("/[^0-9 ]+/","",shell_exec("systeminfo | findstr Memory")))));
 		$memory = round($memory_stats[4] / $memory_stats[0] * 100);
 
 	} else {
 
 		// Get stats for linux using simplest possible methods
-		if(function_exists("sys_getloadavg")) {
+		if(shell_exec("which mpstat")) {
+			$cpu = 100 - round(shell_exec("mpstat 1 2 | tail -n 1 | sed 's/.*\([0-9\.+]\{5\}\)$/\\1/'"));
+		} elseif(function_exists("sys_getloadavg")) {
 			$load = sys_getloadavg();
 			$cpu = $load[0] * 100 / $num_cpus;
 		} elseif(shell_exec("which uptime")) {
 			$str = substr(strrchr(shell_exec("uptime"),":"),1);
 			$avs = array_map("trim",explode(",",$str));
 			$cpu = $avs[0] * 100 / $num_cpus;
-		} elseif(shell_exec("which mpstat")) {
-			$cpu = 100 - round(shell_exec("mpstat 1 2 | tail -n 1 | sed 's/.*\([0-9\.+]\{5\}\)$/\\1/'"));
-		} elseif(is_file('/proc/loadavg')) {
+		} elseif(is_file("/proc/loadavg")) {
 			$cpu = 0;
 			$output = shell_exec("cat /proc/loadavg");
 			$cpu = substr($output,0,strpos($output," "));
@@ -138,18 +138,18 @@ if(!empty($_GET['json'])) {
 
 	header("Content-type: application/json");
 	exit(json_encode(array(
-		'uptime' => $uptime,
-		'disk' => $disk,
-		'disk_total' => $disk_total,
-		'disk_used' => $disk_used,
-		'cpu' => $cpu,
-		'num_cpus' => $num_cpus,
-		'memory' => $memory,
-		'memory_total' => $mem_total,
-		'memory_used' => $mem_used,
-		'swap' => $swap,
-		'swap_total' => $swap_total,
-		'swap_used' => $swap_used,
+		"uptime" => $uptime,
+		"disk" => $disk,
+		"disk_total" => $disk_total,
+		"disk_used" => $disk_used,
+		"cpu" => $cpu,
+		"num_cpus" => $num_cpus,
+		"memory" => $memory,
+		"memory_total" => $mem_total,
+		"memory_used" => $mem_used,
+		"swap" => $swap,
+		"swap_total" => $swap_total,
+		"swap_used" => $swap_used,
 	)));
 }
 
@@ -346,7 +346,7 @@ $(document).ready(function() {
 </footer>
 <dialog>
 	<div class="left">
-		<h2><?php echo $windows ? $_SERVER['SERVER_NAME'] : shell_exec("hostname -f"); ?></h2>
+		<h2><?php echo $windows ? $_SERVER["SERVER_NAME"] : shell_exec("hostname -f"); ?></h2>
 		<?php
 			if(!$windows) {
 				$version_cmd = shell_exec("cat /etc/issue");
@@ -355,7 +355,7 @@ $(document).ready(function() {
 				echo $version, "<br>";
 			}
 		?>
-		<?php echo $_SERVER['SERVER_ADDR']; ?>
+		<?php echo $_SERVER["SERVER_ADDR"]; ?>
 	</div>
 	<div class="right">
 		<b>Disk:</b> <span id="dt-disk-used"><?php echo round($disk_used / 1048576, 2); ?></span> GB / <?php echo round($disk_total / 1048576, 2); ?> GB<br>
