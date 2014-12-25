@@ -22,7 +22,7 @@ if($windows) {
 	$uptime = 'Error';
 
 	// Assuming C: as the system drive
-	$disk_stats = explode(' ',trim(preg_replace('/\s+/',' ',preg_replace('/[^0-9 ]+/','',`fsutil volume diskfree c:`))));
+	$disk_stats = explode(' ',trim(preg_replace('/\s+/',' ',preg_replace('/[^0-9 ]+/','',shell_exec("fsutil volume diskfree c:")))));
 	$disk = round($disk_stats[0] / $disk_stats[1] * 100);
 
 	$disk_total = '';
@@ -58,10 +58,7 @@ if($windows) {
 	}
 
 	// Check disk stats
-	$disk_result = `df -P | grep /$`;
-	if(!trim($disk_result)) {
-		$disk_result = `df -P | grep /$`;
-	}
+	$disk_result = shell_exec("df -P | grep /$");
 	$disk_result = explode(" ", preg_replace("/\s+/", " ", $disk_result));
 
 	$disk_total = intval($disk_result[1]);
@@ -69,14 +66,14 @@ if($windows) {
 	$disk = intval(rtrim($disk_result[4], "%"));
 
 	// Check current RAM usage
-	$mem_result = trim(`free -mo | grep Mem`);
+	$mem_result = trim(shell_exec("free -mo | grep Mem"));
 	$mem_result = explode(" ", preg_replace("/\s+/", " ", $mem_result));
 	$mem_total = intval($mem_result[1]);
 	$mem_used = $mem_result[2] - $mem_result[5] - $mem_result[6];
 	$memory = round($mem_used / $mem_total * 100);
 
 	// Check current swap usage
-	$swap_result = trim(`free -mo | grep Swap`);
+	$swap_result = trim(shell_exec("free -mo | grep Swap"));
 	$swap_result = explode(" ", preg_replace("/\s+/", " ", $swap_result));
 	$swap_total = $swap_result[1];
 	$swap_used = $swap_result[2];
@@ -113,8 +110,8 @@ if(!empty($_GET['json'])) {
 	if($windows) {
 
 		// Get stats for Windows
-		$cpu = intval(trim(preg_replace('/[^0-9]+/','',`wmic cpu get loadpercentage`)));
-		$memory_stats = explode(' ',trim(preg_replace('/\s+/',' ',preg_replace('/[^0-9 ]+/','',`systeminfo | findstr Memory`))));
+		$cpu = intval(trim(preg_replace('/[^0-9]+/','',shell_exec("wmic cpu get loadpercentage"))));
+		$memory_stats = explode(' ',trim(preg_replace('/\s+/',' ',preg_replace('/[^0-9 ]+/','',shell_exec("systeminfo | findstr Memory")))));
 		$memory = round($memory_stats[4] / $memory_stats[0] * 100);
 
 	} else {
@@ -123,15 +120,15 @@ if(!empty($_GET['json'])) {
 		if(function_exists("sys_getloadavg")) {
 			$load = sys_getloadavg();
 			$cpu = $load[0] * 100 / $num_cpus;
-		} elseif(`which uptime`) {
-			$str = substr(strrchr(`uptime`,":"),1);
+		} elseif(shell_exec("which uptime")) {
+			$str = substr(strrchr(shell_exec("uptime"),":"),1);
 			$avs = array_map("trim",explode(",",$str));
 			$cpu = $avs[0] * 100 / $num_cpus;
-		} elseif(`which mpstat`) {
-			$cpu = 100 - round(`mpstat 1 2 | tail -n 1 | sed 's/.*\([0-9\.+]\{5\}\)$/\\1/'`);
+		} elseif(shell_exec("which mpstat")) {
+			$cpu = 100 - round(shell_exec("mpstat 1 2 | tail -n 1 | sed 's/.*\([0-9\.+]\{5\}\)$/\\1/'"));
 		} elseif(is_file('/proc/loadavg')) {
 			$cpu = 0;
-			$output = `cat /proc/loadavg`;
+			$output = shell_exec("cat /proc/loadavg");
 			$cpu = substr($output,0,strpos($output," "));
 		} else {
 			$cpu = 0;
@@ -349,7 +346,7 @@ $(document).ready(function() {
 </footer>
 <dialog>
 	<div class="left">
-		<h2><?php echo $windows ? $_SERVER['SERVER_NAME'] : `hostname -f`; ?></h2>
+		<h2><?php echo $windows ? $_SERVER['SERVER_NAME'] : shell_exec("hostname -f"); ?></h2>
 		<?php
 			if(!$windows) {
 				$version_cmd = shell_exec("cat /etc/issue");
