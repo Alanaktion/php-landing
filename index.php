@@ -253,7 +253,8 @@ dialog {
 	-webkit-transition: -webkit-transform .2s cubic-bezier(.15,.75,.55,1);
 	transition: transform .2s cubic-bezier(.15,.75,.55,1);
 }
-dialog[open] {
+dialog[open],
+dialog.open {
 	-webkit-transform: translateY(0);
 	transform: translateY(0);
 }
@@ -319,11 +320,11 @@ $(document).ready(function() {
 	update();
 	//
 	$('#detail').click(function(e) {
-		$('dialog').prop('open', true);
+		$('dialog').prop('open', true).addClass('open');
 		$('<div />').addClass('overlay').appendTo('body');
 	});
 	$('body').on('click', '.overlay', function(e) {
-		$('dialog').prop('open', false);
+		$('dialog').prop('open', false).removeClass('open');
 		$('.overlay').remove();
 	});
 });
