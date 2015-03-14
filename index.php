@@ -357,7 +357,7 @@ $(document).ready(function() {
 				} else {
 					$version_cmd = shell_exec("/usr/bin/lsb_release -d");
 					if(strpos($version_cmd, "Description") === 0) {
-						$version = preg_replace("/^Description: /", "", $version_cmd);
+						$version = preg_replace("/^Description:\\s/", "", $version_cmd);
 					}
 				}
 				echo $version ? $version . "<br>" : "";
