@@ -349,10 +349,18 @@ $(document).ready(function() {
 		<h2><?php echo $windows ? $_SERVER["SERVER_NAME"] : shell_exec("hostname -f"); ?></h2>
 		<?php
 			if(!$windows) {
-				$version_cmd = shell_exec("cat /etc/issue");
-				$version_arr = explode("\\", $version_cmd);
-				$version = $version_arr[0];
-				echo $version, "<br>";
+				$version_cmd = shell_exec("/bin/cat /etc/issue");
+				$version = "";
+				if($version_cmd) {
+					$version_arr = explode("\\", $version_cmd);
+					$version = $version_arr[0];
+				} else {
+					$version_cmd = shell_exec("/usr/bin/lsb_release -d");
+					if(strpos($version_cmd, "Description") === 0) {
+						$version = preg_replace("/^Description: /", "", $version_cmd);
+					}
+				}
+				echo $version ? $version . "<br>" : "";
 			}
 		?>
 		<?php echo $_SERVER["SERVER_ADDR"]; ?>
