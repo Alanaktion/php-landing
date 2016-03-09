@@ -66,18 +66,22 @@ if($windows) {
 	$disk_used = intval($disk_result[2]);
 	$disk = intval(rtrim($disk_result[4], "%"));
 
-	// Check current RAM usage
-	$mem_result = trim(shell_exec("/usr/bin/free -m | /usr/bin/grep Mem"));
-	$mem_result = explode(" ", preg_replace("/\s+/", " ", $mem_result));
-	$mem_total = intval($mem_result[1]);
-	$mem_used = $mem_result[2] - $mem_result[5] - $mem_result[6];
+	// Get current RAM and Swap stats
+	$meminfoStr = shell_exec('/usr/bin/awk \'$3=="kB"{$2=$2/1024;$3=""} 1\' /proc/meminfo');
+	$mem = array();
+	foreach(explode("\n", trim($meminfoStr)) as $m) {
+		$m = explode(": ", $m, 2);
+		$mem[$m[0]] = trim($m[1]);
+	}
+
+	// Calculate current RAM usage
+	$mem_total = round($mem['MemTotal']);
+	$mem_used = $mem_total - round($mem['MemFree']) - round($mem['Cached']);
 	$memory = round($mem_used / $mem_total * 100);
 
-	// Check current swap usage
-	$swap_result = trim(shell_exec("/usr/bin/free -m | /usr/bin/grep Swap"));
-	$swap_result = explode(" ", preg_replace("/\s+/", " ", $swap_result));
-	$swap_total = $swap_result[1];
-	$swap_used = $swap_result[2];
+	// Calculate current swap usage
+	$swap_total = round($mem['SwapTotal']);
+	$swap_used = $swap_total - round($mem['SwapFree']);
 	$swap = round($swap_used / $swap_total * 100);
 }
 
