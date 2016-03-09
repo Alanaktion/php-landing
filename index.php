@@ -22,7 +22,8 @@ if($windows) {
 	$uptime = "Error";
 
 	// Assuming C: as the system drive
-	$disk_stats = explode(" ",trim(preg_replace("/\s+/"," ",preg_replace("/[^0-9 ]+/","",shell_exec("fsutil volume diskfree c:")))));
+	$df = shell_exec("fsutil volume diskfree c:");
+	$disk_stats = explode(" ", trim(preg_replace("/\s+/", " ", preg_replace("/[^0-9 ]+/", "", $df))));
 	$disk = round($disk_stats[0] / $disk_stats[1] * 100);
 
 	$disk_total = "";
@@ -39,7 +40,7 @@ if($windows) {
 
 } else {
 
-	$initial_uptime = shell_exec("cut -d. -f1 /proc/uptime");
+	$initial_uptime = shell_exec("/usr/bin/cut -d. -f1 /proc/uptime");
 	$days = floor($initial_uptime / 60 / 60 / 24);
 	$hours = $initial_uptime / 60 / 60 % 24;
 	$mins = $initial_uptime / 60 % 60;
@@ -58,7 +59,7 @@ if($windows) {
 	}
 
 	// Check disk stats
-	$disk_result = shell_exec("df -P | grep /$");
+	$disk_result = shell_exec("/usr/bin/df -P | /usr/bin/grep /$");
 	$disk_result = explode(" ", preg_replace("/\s+/", " ", $disk_result));
 
 	$disk_total = intval($disk_result[1]);
@@ -66,14 +67,14 @@ if($windows) {
 	$disk = intval(rtrim($disk_result[4], "%"));
 
 	// Check current RAM usage
-	$mem_result = trim(shell_exec("free -mo | grep Mem"));
+	$mem_result = trim(shell_exec("/usr/bin/free -m | /usr/bin/grep Mem"));
 	$mem_result = explode(" ", preg_replace("/\s+/", " ", $mem_result));
 	$mem_total = intval($mem_result[1]);
 	$mem_used = $mem_result[2] - $mem_result[5] - $mem_result[6];
 	$memory = round($mem_used / $mem_total * 100);
 
 	// Check current swap usage
-	$swap_result = trim(shell_exec("free -mo | grep Swap"));
+	$swap_result = trim(shell_exec("/usr/bin/free -m | /usr/bin/grep Swap"));
 	$swap_result = explode(" ", preg_replace("/\s+/", " ", $swap_result));
 	$swap_total = $swap_result[1];
 	$swap_used = $swap_result[2];
@@ -117,19 +118,19 @@ if(!empty($_GET["json"])) {
 	} else {
 
 		// Get stats for linux using simplest possible methods
-		if(shell_exec("which mpstat")) {
-			$cpu = 100 - round(shell_exec("mpstat 1 2 | tail -n 1 | sed 's/.*\([0-9\.+]\{5\}\)$/\\1/'"));
+		if(is_file("/usr/bin/mpstat")) {
+			$cpu = 100 - round(shell_exec("/usr/bin/mpstat 1 2 | /usr/bin/tail -n 1 | /usr/bin/sed 's/.*\([0-9\.+]\{5\}\)$/\\1/'"));
 		} elseif(function_exists("sys_getloadavg")) {
 			$load = sys_getloadavg();
 			$cpu = $load[0] * 100 / $num_cpus;
-		} elseif(shell_exec("which uptime")) {
-			$str = substr(strrchr(shell_exec("uptime"),":"),1);
-			$avs = array_map("trim",explode(",",$str));
-			$cpu = $avs[0] * 100 / $num_cpus;
 		} elseif(is_file("/proc/loadavg")) {
 			$cpu = 0;
-			$output = shell_exec("cat /proc/loadavg");
+			$output = file_get_contents("/proc/loadavg");
 			$cpu = substr($output,0,strpos($output," "));
+		} elseif(is_file("/usr/bin/uptime")) {
+			$str = substr(strrchr(shell_exec("/usr/bin/uptime"),":"),1);
+			$avs = array_map("trim",explode(",",$str));
+			$cpu = $avs[0] * 100 / $num_cpus;
 		} else {
 			$cpu = 0;
 		}
