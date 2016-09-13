@@ -58,8 +58,12 @@ if($windows) {
 		$uptime = "Error retreving uptime.";
 	}
 
+	// Get path for grep and df
+    $path_grep = str_replace("\n", "", shell_exec("which grep"));
+    $path_df = str_replace("\n", "", shell_exec("which df"));
+
 	// Check disk stats
-	$disk_result = shell_exec("/usr/bin/df -P | /usr/bin/grep /$");
+	$disk_result = shell_exec($path_df." -P | ".$path_grep." /$");
 	$disk_result = explode(" ", preg_replace("/\s+/", " ", $disk_result));
 
 	$disk_total = intval($disk_result[1]);
@@ -120,10 +124,12 @@ if(!empty($_GET["json"])) {
 		$memory = round($memory_stats[4] / $memory_stats[0] * 100);
 
 	} else {
+	    // Get path for sed
+        $path_sed = str_replace("\n", "", shell_exec("which sed"));
 
 		// Get stats for linux using simplest possible methods
 		if(is_file("/usr/bin/mpstat")) {
-			$cpu = 100 - round(shell_exec("/usr/bin/mpstat 1 2 | /usr/bin/tail -n 1 | /usr/bin/sed 's/.*\([0-9\.+]\{5\}\)$/\\1/'"));
+			$cpu = 100 - round(shell_exec("/usr/bin/mpstat 1 2 | /usr/bin/tail -n 1 | ".$path_sed." 's/.*\([0-9\.+]\{5\}\)$/\\1/'"));
 		} elseif(function_exists("sys_getloadavg")) {
 			$load = sys_getloadavg();
 			$cpu = $load[0] * 100 / $num_cpus;
