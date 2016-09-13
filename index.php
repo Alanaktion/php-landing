@@ -59,8 +59,8 @@ if($windows) {
 	}
 
 	// Get path for grep and df
-    $path_grep = str_replace("\n", "", shell_exec("which grep"));
-    $path_df = str_replace("\n", "", shell_exec("which df"));
+    $path_grep = trim(shell_exec("command -v grep"));
+    $path_df = trim(shell_exec("command -v df"));
 
 	// Check disk stats
 	$disk_result = shell_exec($path_df." -P | ".$path_grep." /$");
@@ -125,7 +125,7 @@ if(!empty($_GET["json"])) {
 
 	} else {
 	    // Get path for sed
-        $path_sed = str_replace("\n", "", shell_exec("which sed"));
+        $path_sed = trim(shell_exec("command -v sed"));
 
 		// Get stats for linux using simplest possible methods
 		if(is_file("/usr/bin/mpstat")) {
