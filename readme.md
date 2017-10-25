@@ -1,5 +1,10 @@
 # php-landing
 
+Nice landing page with statistic information about your server.
+
+![Screenshot 1](https://raw.githubusercontent.com/lgg-awesome/php-landing/master/screen1.png)
+![Screenshot 2](https://raw.githubusercontent.com/lgg-awesome/php-landing/master/screen2.png)
+
 ### Requirements
 
 Windows, UNIX, or Linux web server, PHP 5.
