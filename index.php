@@ -40,7 +40,7 @@ if($windows) {
 
 } else {
 
-	$initial_uptime = shell_exec("/usr/bin/cut -d. -f1 /proc/uptime");
+	$initial_uptime = shell_exec("cut -d. -f1 /proc/uptime");
 	$days = floor($initial_uptime / 60 / 60 / 24);
 	$hours = $initial_uptime / 60 / 60 % 24;
 	$mins = $initial_uptime / 60 % 60;
@@ -58,12 +58,8 @@ if($windows) {
 		$uptime = "Error retreving uptime.";
 	}
 
-	// Get path for grep and df
-    $path_grep = str_replace("\n", "", shell_exec("which grep"));
-    $path_df = str_replace("\n", "", shell_exec("which df"));
-
 	// Check disk stats
-	$disk_result = shell_exec($path_df." -P | ".$path_grep." /$");
+	$disk_result = shell_exec("df -P | grep /$");
 	$disk_result = explode(" ", preg_replace("/\s+/", " ", $disk_result));
 
 	$disk_total = intval($disk_result[1]);
@@ -71,7 +67,7 @@ if($windows) {
 	$disk = intval(rtrim($disk_result[4], "%"));
 
 	// Get current RAM and Swap stats
-	$meminfoStr = shell_exec('/usr/bin/awk \'$3=="kB"{$2=$2/1024;$3=""} 1\' /proc/meminfo');
+	$meminfoStr = shell_exec('awk \'$3=="kB"{$2=$2/1024;$3=""} 1\' /proc/meminfo');
 	$mem = array();
 	foreach(explode("\n", trim($meminfoStr)) as $m) {
 		$m = explode(": ", $m, 2);
@@ -124,12 +120,9 @@ if(!empty($_GET["json"])) {
 		$memory = round($memory_stats[4] / $memory_stats[0] * 100);
 
 	} else {
-	    // Get path for sed
-        $path_sed = str_replace("\n", "", shell_exec("which sed"));
-
 		// Get stats for linux using simplest possible methods
-		if(is_file("/usr/bin/mpstat")) {
-			$cpu = 100 - round(shell_exec("/usr/bin/mpstat 1 2 | /usr/bin/tail -n 1 | ".$path_sed." 's/.*\([0-9\.+]\{5\}\)$/\\1/'"));
+		if(is_file("mpstat")) {
+			$cpu = 100 - round(shell_exec("mpstat 1 2 | tail -n 1 | sed 's/.*\([0-9\.+]\{5\}\)$/\\1/'"));
 		} elseif(function_exists("sys_getloadavg")) {
 			$load = sys_getloadavg();
 			$cpu = $load[0] * 100 / $num_cpus;
@@ -137,8 +130,8 @@ if(!empty($_GET["json"])) {
 			$cpu = 0;
 			$output = file_get_contents("/proc/loadavg");
 			$cpu = substr($output,0,strpos($output," "));
-		} elseif(is_file("/usr/bin/uptime")) {
-			$str = substr(strrchr(shell_exec("/usr/bin/uptime"),":"),1);
+		} elseif(is_file("uptime")) {
+			$str = substr(strrchr(shell_exec("uptime"),":"),1);
 			$avs = array_map("trim",explode(",",$str));
 			$cpu = $avs[0] * 100 / $num_cpus;
 		} else {
@@ -360,13 +353,12 @@ $(document).ready(function() {
 		<h2><?php echo $windows ? $_SERVER["SERVER_NAME"] : shell_exec("hostname -f"); ?></h2>
 		<?php
 			if(!$windows) {
-				$version_cmd = shell_exec("/bin/cat /etc/issue");
 				$version = "";
-				if($version_cmd) {
-					$version_arr = explode("\\", $version_cmd);
+				if(is_file("/etc/issue")) {
+					$version_arr = explode("\\", file_get_contents("/etc/issue"));
 					$version = $version_arr[0];
 				} else {
-					$version_cmd = shell_exec("/usr/bin/lsb_release -d");
+					$version_cmd = shell_exec("lsb_release -d");
 					if(strpos($version_cmd, "Description") === 0) {
 						$version = preg_replace("/^Description:\\s/", "", $version_cmd);
 					}
