@@ -8,7 +8,7 @@ $color_name = "#fff";
 $color_text = "#ccc";
 $custom_css = "";
 
-if(is_file("config.php")) {
+if (is_file("config.php")) {
 	include "config.php";
 }
 
@@ -16,7 +16,7 @@ if(is_file("config.php")) {
 $windows = defined("PHP_WINDOWS_VERSION_MAJOR");
 
 // Get system status
-if($windows) {
+if ($windows) {
 
 	// Uptime parsing was a mess...
 	$uptime = "Error";
@@ -46,7 +46,7 @@ if($windows) {
 	$mins = $initial_uptime / 60 % 60;
 	$secs = $initial_uptime % 60;
 
-	if($days > "0") {
+	if ($days > "0") {
 		$uptime = $days . "d " . $hours . "h";
 	} elseif ($days == "0" && $hours > "0") {
 		$uptime = $hours . "h " . $mins . "m";
@@ -85,21 +85,20 @@ if($windows) {
 	$swap = round($swap_used / $swap_total * 100);
 }
 
-if(!empty($_GET["json"])) {
-
+if (!empty($_GET["json"])) {
 	// Determine number of CPUs
 	$num_cpus = 1;
-	if (is_file("/proc/cpuinfo")) {
-		$cpuinfo = file_get_contents("/proc/cpuinfo");
-		preg_match_all("/^processor/m", $cpuinfo, $matches);
-		$num_cpus = count($matches[0]);
-	} else if ("WIN" == strtoupper(substr(PHP_OS, 0, 3))) {
+	if ($windows) {
 		$process = @popen("wmic cpu get NumberOfCores", "rb");
 		if (false !== $process) {
 			fgets($process);
 			$num_cpus = intval(fgets($process));
 			pclose($process);
 		}
+	} elseif (is_file("/proc/cpuinfo")) {
+		$cpuinfo = file_get_contents("/proc/cpuinfo");
+		preg_match_all("/^processor/m", $cpuinfo, $matches);
+		$num_cpus = count($matches[0]);
 	} else {
 		$process = @popen("sysctl -a", "rb");
 		if (false !== $process) {
@@ -112,32 +111,29 @@ if(!empty($_GET["json"])) {
 		}
 	}
 
-	if($windows) {
-
+	if ($windows) {
 		// Get stats for Windows
 		$cpu = intval(trim(preg_replace("/[^0-9]+/","",shell_exec("wmic cpu get loadpercentage"))));
 		$memory_stats = explode(' ',trim(preg_replace("/\s+/"," ",preg_replace("/[^0-9 ]+/","",shell_exec("systeminfo | findstr Memory")))));
 		$memory = round($memory_stats[4] / $memory_stats[0] * 100);
-
 	} else {
-		// Get stats for linux using simplest possible methods
-		if(is_file("mpstat")) {
+		// Get stats for linux using simplest/most accurate possible methods
+		if (is_file("mpstat")) {
 			$cpu = 100 - round(shell_exec("mpstat 1 2 | tail -n 1 | sed 's/.*\([0-9\.+]\{5\}\)$/\\1/'"));
-		} elseif(function_exists("sys_getloadavg")) {
+		} elseif (function_exists("sys_getloadavg")) {
 			$load = sys_getloadavg();
 			$cpu = $load[0] * 100 / $num_cpus;
-		} elseif(is_file("/proc/loadavg")) {
+		} elseif (is_file("/proc/loadavg")) {
 			$cpu = 0;
 			$output = file_get_contents("/proc/loadavg");
 			$cpu = substr($output,0,strpos($output," "));
-		} elseif(is_file("uptime")) {
+		} elseif (is_file("uptime")) {
 			$str = substr(strrchr(shell_exec("uptime"),":"),1);
 			$avs = array_map("trim",explode(",",$str));
 			$cpu = $avs[0] * 100 / $num_cpus;
 		} else {
 			$cpu = 0;
 		}
-
 	}
 
 	header("Content-type: application/json");
@@ -170,7 +166,7 @@ html,body {
 	padding: 0;
 }
 body {
-	font-family: "Segoe UI Light",'HelveticaNeue-UltraLight','Helvetica Neue UltraLight','Helvetica Neue',"Open Sans","Segoe UI","Tahoma","Verdana","Arial",sans-serif;
+	font-family: -apple-system, system-ui, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
 	font-weight: 300;
 	background: <?php echo $color_bg; ?>;
 	overflow: hidden;
@@ -213,7 +209,6 @@ a:hover, a:focus, a:active {
 	float: right;
 }
 footer {
-	font-family: "Segoe UI",'Helvetica Neue',"Open Sans","Tahoma","Verdana","Arial",sans-serif;
 	position: absolute;
 	position: fixed;
 	line-height: 40px;
@@ -232,7 +227,7 @@ footer {
 	background-color: black;
 	opacity: 0.3;
 }
-dialog {
+.dialog {
 	z-index: 2;
 	position: absolute;
 	bottom: 0;
@@ -255,7 +250,7 @@ dialog {
 	transition: transform .2s cubic-bezier(.15,.75,.55,1);
 }
 dialog[open],
-dialog.open {
+.dialog.open {
 	-webkit-transform: translateY(0);
 	transform: translateY(0);
 }
@@ -280,86 +275,94 @@ footer canvas + input {
 <?php echo $custom_css; ?>
 /* End: Custom CSS */
 </style>
-<script src="//ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
-<script src="jqknob.js"></script>
 <script>
 function update() {
-	$.post('<?php echo basename(__FILE__); ?>?json=1', function(data) {
+	var xhr = new XMLHttpRequest();
+	xhr.addEventListener('load', function() {
+		data = JSON.parse(xhr.responseText);
 
 		// Update footer
-		$('#uptime').text(data.uptime);
-		$('#k-cpu').val(data.cpu).trigger("change");
-		$('#k-memory').val(data.memory).trigger("change");
-		if(data.swap_total) {
-			$('#k-swap').val(data.swap).trigger("change");
+		document.getElementById('uptime').textContent = data.uptime;
+		document.getElementById('k-cpu').value = data.cpu; // TODO: reimplement in SVG
+		document.getElementById('k-memory').value = data.memory;  // TODO: reimplement in SVG
+		if (data.swap_total) {
+			document.getElementById('k-swap').value = data.swap;  // TODO: reimplement in SVG
 		}
 
 		// Update details
-		$('#dt-disk-used').text(Math.round(data.disk_used / 10485.76) / 100);
-		$('#dt-mem-used').text(data.memory_used);
-		$('#dt-num-cpus').text(data.num_cpus);
-		if(data.swap_total) {
-			$('#dt-swap_used').text(data.swap_used);
+		document.getElementById('dt-disk-used').textContent = Math.round(data.disk_used / 10485.76) / 100;
+		document.getElementById('dt-mem-used').textContent = data.memory_used;
+		document.getElementById('dt-num-cpus').textContent = data.num_cpus;
+		if (data.swap_total) {
+			document.getElementById('dt-swap_used').textContent = data.swap_used;
 		}
 
 		window.setTimeout(update, 3000);
-
-	},'json');
+	});
+	xhr.open('POST', '<?php echo basename(__FILE__); ?>?json=1');
+	xhr.send();
 }
-$(document).ready(function() {
-	// Show ring charts
-	$("#k-disk, #k-memory, #k-swap, #k-cpu").knob({
-		readOnly: true,
-		width: 40,
-		height: 40,
-		thickness: 0.2,
-		fontWeight: 'normal',
-		bgColor: 'rgba(127,127,127,0.15)', // 50% grey with a low opacity, should work with most backgrounds
-		fgColor: '<?php echo $color_text; ?>'
-	});
-	// Start AJAX update loop
-	update();
-	//
-	$('#detail').click(function(e) {
-		$('dialog').prop('open', true).addClass('open');
-		$('<div />').addClass('overlay').appendTo('body');
-	});
-	$('body').on('click', '.overlay', function(e) {
-		$('dialog').prop('open', false).removeClass('open');
-		$('.overlay').remove();
-	});
+// Show ring charts
+/*$("#k-disk, #k-memory, #k-swap, #k-cpu").knob({
+	readOnly: true,
+	width: 40,
+	height: 40,
+	thickness: 0.2,
+	fontWeight: 'normal',
+	bgColor: 'rgba(127,127,127,0.15)', // 50% grey with a low opacity, should work with most backgrounds
+	fgColor: '<?php echo $color_text; ?>'
+});*/
+
+// Start AJAX update loop
+update();
+
+document.getElementById('detail').addEventListener('click', function() {
+	let dialog = document.getElementsByClassName('dialog')[0];
+	dialog.classList.add('open');
+
+	let overlay = document.createElement('div');
+	overlay.className = 'overlay';
+	document.body.appendChild(overlay);
+});
+
+document.body.addEventListener('click', function(e) {
+	if (e.target.className == 'overlay') {
+		let dialog = document.getElementsByClassName('dialog')[0];
+		dialog.classList.remove('open');
+		e.target.remove();
+	}
 });
 </script>
 </head>
 <body>
-<section>
+<section class="main">
 	<h1><?php echo $server_name; ?></h1>
 	<p><?php echo $server_desc; ?></p>
 </section>
-<footer>
-	<?php if(!$windows && !empty($uptime)) { ?>
+<footer class="footer">
+	<?php if (!$windows && !empty($uptime)) { ?>
 		Uptime: <span id="uptime"><?php echo $uptime; ?></span>&emsp;
 	<?php } ?>
 	Disk usage: <input id="k-disk" value="<?php echo $disk; ?>">&emsp;
 	Memory: <input id="k-memory" value="<?php echo $memory; ?>">&emsp;
-	<?php if($swap_total !== "0") { ?>
+	<?php if ($swap_total !== "0") { ?>
 		Swap: <input id="k-swap" value="<?php echo $swap; ?>">&emsp;
 	<?php } ?>
 	CPU: <input id="k-cpu" value="0">
 	<a class="right" id="detail">Detail</a>
 </footer>
-<dialog>
+<div class="dialog">
 	<div class="left">
 		<h2><?php echo $windows ? $_SERVER["SERVER_NAME"] : shell_exec("hostname -f"); ?></h2>
 		<?php
-			if(!$windows) {
+			if (!$windows) {
 				$version = "";
-				if(is_file("/etc/issue")) {
+				if (is_file("/etc/issue")) {
 					$version_arr = explode("\\", file_get_contents("/etc/issue"));
 					$version = $version_arr[0];
 				} else {
 					$version_cmd = shell_exec("lsb_release -d");
-					if(strpos($version_cmd, "Description") === 0) {
+					if (strpos($version_cmd, "Description") === 0) {
 						$version = preg_replace("/^Description:\\s/", "", $version_cmd);
 					}
 				}
@@ -371,13 +374,13 @@ $(document).ready(function() {
 	<div class="right">
 		<b>Disk:</b> <span id="dt-disk-used"><?php echo round($disk_used / 1048576, 2); ?></span> GB / <?php echo round($disk_total / 1048576, 2); ?> GB<br>
 		<b>Memory:</b> <span id="dt-mem-used"><?php echo $mem_used; ?></span> MB / <?php echo $mem_total; ?> MB<br>
-		<?php if($swap_total !== "0") { ?>
+		<?php if ($swap_total !== "0") { ?>
 			<b>Swap:</b> <span id="dt-swap-used"><?php echo $swap_used ?></span> MB / <?php echo $swap_total ?> MB<br>
 		<?php } else { ?>
 			<b>Swap:</b> N/A<br>
 		<?php }?>
 		<b>CPU Cores:</b> <span id="dt-num-cpus"></span>
 	</div>
-</dialog>
+</div>
 </body>
 </html>
