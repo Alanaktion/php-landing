@@ -171,7 +171,7 @@ body {
 	background: <?php echo $color_bg; ?>;
 	overflow: hidden;
 }
-section {
+.main {
 	position: absolute;
 	top: 50%;
 	width: 100%;
@@ -208,7 +208,7 @@ a:hover, a:focus, a:active {
 	text-align: right;
 	float: right;
 }
-footer {
+.footer {
 	position: absolute;
 	position: fixed;
 	line-height: 40px;
@@ -249,12 +249,11 @@ footer {
 	-webkit-transition: -webkit-transform .2s cubic-bezier(.15,.75,.55,1);
 	transition: transform .2s cubic-bezier(.15,.75,.55,1);
 }
-dialog[open],
 .dialog.open {
 	-webkit-transform: translateY(0);
 	transform: translateY(0);
 }
-dialog h2 {
+.dialog h2 {
 	color: <?php echo $color_bg; ?>;
 	font-weight: 100;
 	font-size: 2em;
@@ -263,10 +262,10 @@ dialog h2 {
 }
 
 /* Yes, this is a hack. */
-footer canvas {
+.footer canvas {
 	vertical-align: middle;
 }
-footer canvas + input {
+.footer canvas + input {
 	margin-top: 16px !important;
 	font-size: 12px !important;
 }
@@ -284,9 +283,9 @@ function update() {
 		// Update footer
 		document.getElementById('uptime').textContent = data.uptime;
 		document.getElementById('k-cpu').value = data.cpu; // TODO: reimplement in SVG
-		document.getElementById('k-memory').value = data.memory;  // TODO: reimplement in SVG
+		document.getElementById('k-memory').value = data.memory; // TODO: reimplement in SVG
 		if (data.swap_total) {
-			document.getElementById('k-swap').value = data.swap;  // TODO: reimplement in SVG
+			document.getElementById('k-swap').value = data.swap; // TODO: reimplement in SVG
 		}
 
 		// Update details
