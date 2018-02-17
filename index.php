@@ -160,37 +160,39 @@ if (!empty($_GET["json"])) {
 <meta charset="utf-8">
 <title><?php echo $server_name; ?></title>
 <style type="text/css">
-html,body {
-	height: 100%;
-	margin: 0;
-	padding: 0;
-}
 body {
+	height: 100vh;
+	padding: 0;
+	margin: 0;
+	display: flex;
+	flex-direction: column;
 	font-family: -apple-system, system-ui, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-	font-weight: 300;
 	background: <?php echo $color_bg; ?>;
-	overflow: hidden;
 }
-.main {
-	position: absolute;
-	top: 50%;
-	width: 100%;
-	margin-top: -4em;
-}
-h1, p {
+.main, .footer {
 	padding-left: 15%;
+	padding-right: 15%;
 }
-h1 {
+
+.main {
+	flex: 1;
+	display: flex;
+	flex-direction: column;
+	justify-content: center;
+}
+.main h1 {
+	font-size: 4rem;
+	font-weight: 300;
+	margin: 0;
 	color: <?php echo $color_name; ?>;
-	font-weight: 100;
-	font-size: 4em;
-	margin: 0;
 }
-p {
+.main p {
+	font-size: 2rem;
+	font-weight: normal;
+	margin: 0;
 	color: <?php echo $color_text; ?>;
-	font-size: 2em;
-	margin: 0;
 }
+
 a, a:link, a:visited {
 	color: <?php echo $color_name; ?>;
 	text-decoration: none;
@@ -200,23 +202,29 @@ a:hover, a:focus, a:active {
 	color: <?php echo $color_name; ?>;
 	text-decoration: underline;
 }
-.left {
-	text-align: left;
-	float: left;
-}
-.right {
-	text-align: right;
-	float: right;
-}
+
 .footer {
-	position: absolute;
-	position: fixed;
-	line-height: 40px;
-	bottom: 2em;
-	left: 15%;
-	width: 70%;
+	display: flex;
+	padding-top: 3rem;
+	padding-bottom: 3rem;
 	color: <?php echo $color_text; ?>;
 }
+.footer > div {
+	margin-right: 1rem;
+}
+.footer-end {
+	margin-left: auto;
+	margin-right: 0;
+}
+
+.ring {
+	transform: rotate(-90deg);
+}
+.ring-value {
+	stroke-dasharray: 339.292;
+	stroke-dashoffset: 339.292;
+}
+
 .overlay {
 	z-index: 1;
 	position: absolute;
@@ -227,47 +235,34 @@ a:hover, a:focus, a:active {
 	background-color: black;
 	opacity: 0.3;
 }
-.dialog {
+.details {
 	z-index: 2;
 	position: absolute;
+	box-sizing: border-box;
+	padding: 1em 15%;
 	bottom: 0;
 	left: 0;
 	width: 100%;
-	min-height: 100px;
+	min-height: 6rem;
 
-	border: none;
-	padding: 1em 15%;
+	display: flex;
+	justify-content: space-between;
 
 	background-color: <?php echo $color_text; ?>;
 	color: <?php echo $color_bg; ?>;
 
-	-moz-box-sizing: border-box;
-	box-sizing: border-box;
-
-	-webkit-transform: translateY(130px);
 	transform: translateY(130px);
-	-webkit-transition: -webkit-transform .2s cubic-bezier(.15,.75,.55,1);
 	transition: transform .2s cubic-bezier(.15,.75,.55,1);
 }
-.dialog.open {
-	-webkit-transform: translateY(0);
+.details.open {
 	transform: translateY(0);
 }
-.dialog h2 {
+.details h2 {
 	color: <?php echo $color_bg; ?>;
 	font-weight: 100;
 	font-size: 2em;
 	margin: 0;
 	line-height: 1.3;
-}
-
-/* Yes, this is a hack. */
-.footer canvas {
-	vertical-align: middle;
-}
-.footer canvas + input {
-	margin-top: 16px !important;
-	font-size: 12px !important;
 }
 
 /* Begin: Custom CSS */
@@ -316,8 +311,8 @@ function update() {
 update();
 
 document.getElementById('detail').addEventListener('click', function() {
-	let dialog = document.getElementsByClassName('dialog')[0];
-	dialog.classList.add('open');
+	let details = document.getElementsByClassName('details')[0];
+	details.classList.add('open');
 
 	let overlay = document.createElement('div');
 	overlay.className = 'overlay';
@@ -326,60 +321,72 @@ document.getElementById('detail').addEventListener('click', function() {
 
 document.body.addEventListener('click', function(e) {
 	if (e.target.className == 'overlay') {
-		let dialog = document.getElementsByClassName('dialog')[0];
-		dialog.classList.remove('open');
+		let details = document.getElementsByClassName('details')[0];
+		details.classList.remove('open');
 		e.target.remove();
 	}
 });
 </script>
 </head>
 <body>
-<section class="main">
-	<h1><?php echo $server_name; ?></h1>
-	<p><?php echo $server_desc; ?></p>
-</section>
-<footer class="footer">
-	<?php if (!$windows && !empty($uptime)) { ?>
-		Uptime: <span id="uptime"><?php echo $uptime; ?></span>&emsp;
-	<?php } ?>
-	Disk usage: <input id="k-disk" value="<?php echo $disk; ?>">&emsp;
-	Memory: <input id="k-memory" value="<?php echo $memory; ?>">&emsp;
-	<?php if ($swap_total !== "0") { ?>
-		Swap: <input id="k-swap" value="<?php echo $swap; ?>">&emsp;
-	<?php } ?>
-	CPU: <input id="k-cpu" value="0">
-	<a class="right" id="detail">Detail</a>
-</footer>
-<div class="dialog">
-	<div class="left">
-		<h2><?php echo $windows ? $_SERVER["SERVER_NAME"] : shell_exec("hostname -f"); ?></h2>
-		<?php
-			if (!$windows) {
-				$version = "";
-				if (is_file("/etc/issue")) {
-					$version_arr = explode("\\", file_get_contents("/etc/issue"));
-					$version = $version_arr[0];
-				} else {
-					$version_cmd = shell_exec("lsb_release -d");
-					if (strpos($version_cmd, "Description") === 0) {
-						$version = preg_replace("/^Description:\\s/", "", $version_cmd);
-					}
-				}
-				echo $version ? $version . "<br>" : "";
-			}
-		?>
-		<?php echo $_SERVER["SERVER_ADDR"]; ?>
-	</div>
-	<div class="right">
-		<b>Disk:</b> <span id="dt-disk-used"><?php echo round($disk_used / 1048576, 2); ?></span> GB / <?php echo round($disk_total / 1048576, 2); ?> GB<br>
-		<b>Memory:</b> <span id="dt-mem-used"><?php echo $mem_used; ?></span> MB / <?php echo $mem_total; ?> MB<br>
+	<main class="main">
+		<h1><?php echo $server_name; ?></h1>
+		<p><?php echo $server_desc; ?></p>
+	</main>
+	<footer class="footer">
+		<?php if (!$windows && !empty($uptime)) { ?>
+			<div>Uptime: <span id="uptime"><?php echo $uptime; ?></span></div>
+		<?php } ?>
+		<div>
+			Disk usage:
+			<svg id="k-disk" class="ring" width="40" height="40" viewBox="0 0 120 120">
+				<circle cx="60" cy="60" r="54" fill="none" stroke="#e6e6e6" stroke-width="12" />
+				<circle class="ring-value" cx="60" cy="60" r="54" fill="none" stroke="#f77a52" stroke-width="12" />
+			</svg>
+			<input id="k-disk" value="<?php echo $disk; ?>">
+		</div>
+		<div>Memory: <input id="k-memory" value="<?php echo $memory; ?>"></div>
 		<?php if ($swap_total !== "0") { ?>
-			<b>Swap:</b> <span id="dt-swap-used"><?php echo $swap_used ?></span> MB / <?php echo $swap_total ?> MB<br>
-		<?php } else { ?>
-			<b>Swap:</b> N/A<br>
-		<?php }?>
-		<b>CPU Cores:</b> <span id="dt-num-cpus"></span>
+			<div>Swap: <input id="k-swap" value="<?php echo $swap; ?>"></div>
+		<?php } ?>
+		<div>CPU: <input id="k-cpu" value="0"></div>
+		<div>
+			<a class="right" id="detail">Detail</a>
+		</div>
+		<div class="footer-end">
+			<a href="#" id="detail">Link</a>
+		</div>
+	</footer>
+	<div class="details" aria-hidden="true">
+		<div>
+			<h2><?php echo $windows ? $_SERVER["SERVER_NAME"] : shell_exec("hostname -f"); ?></h2>
+			<?php
+				if (!$windows) {
+					$version = null;
+					if (is_file("/etc/issue")) {
+						$version_arr = explode("\\", file_get_contents("/etc/issue"));
+						$version = $version_arr[0];
+					} else {
+						$version_cmd = shell_exec("lsb_release -d");
+						if (strpos($version_cmd, "Description") === 0) {
+							$version = preg_replace("/^Description:\\s/", "", $version_cmd);
+						}
+					}
+					echo $version ? $version . "<br>" : "";
+				}
+			?>
+			<?php echo $_SERVER["SERVER_ADDR"]; ?>
+		</div>
+		<div>
+			<b>Disk:</b> <span id="dt-disk-used"><?php echo round($disk_used / 1048576, 2); ?></span> GB / <?php echo round($disk_total / 1048576, 2); ?> GB<br>
+			<b>Memory:</b> <span id="dt-mem-used"><?php echo $mem_used; ?></span> MB / <?php echo $mem_total; ?> MB<br>
+			<?php if ($swap_total !== "0") { ?>
+				<b>Swap:</b> <span id="dt-swap-used"><?php echo $swap_used ?></span> MB / <?php echo $swap_total ?> MB<br>
+			<?php } else { ?>
+				<b>Swap:</b> N/A<br>
+			<?php }?>
+			<b>CPU Cores:</b> <span id="dt-num-cpus"></span>
+		</div>
 	</div>
-</div>
 </body>
 </html>

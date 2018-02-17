@@ -111,7 +111,7 @@
 		<div>Text 2</div>
 		<div>Text 3</div>
 		<div class="footer-end">
-			<a href="#">Link</a>
+			<a href="#" id="detail">Link</a>
 		</div>
 	</footer>
 	<div class="details" aria-hidden="true">
@@ -126,5 +126,23 @@
 			Text 4<br>
 		</div>
 	</div>
+	<script type="text/javascript">
+		document.getElementById('detail').addEventListener('click', function() {
+			let details = document.getElementsByClassName('details')[0];
+			details.classList.add('open');
+
+			let overlay = document.createElement('div');
+			overlay.className = 'overlay';
+			document.body.appendChild(overlay);
+		});
+
+		document.body.addEventListener('click', function(e) {
+			if (e.target.className == 'overlay') {
+				let details = document.getElementsByClassName('details')[0];
+				details.classList.remove('open');
+				e.target.remove();
+			}
+		});
+	</script>
 </body>
 </html>
