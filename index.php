@@ -26,17 +26,17 @@ if ($windows) {
 	$disk_stats = explode(" ", trim(preg_replace("/\s+/", " ", preg_replace("/[^0-9 ]+/", "", $df))));
 	$disk = round($disk_stats[0] / $disk_stats[1] * 100);
 
-	$disk_total = "";
-	$disk_used = "";
+	$disk_total = 0;
+	$disk_used = 0;
 
 	// Memory checking is slow on Windows, will only set over AJAX to allow page to load faster
 	$memory = 0;
 	$mem_total = 0;
 	$mem_used = 0;
 
-	$swap = 0;
-	$swap_total = 0;
-	$swap_used = 0;
+	$swap = null;
+	$swap_total = null;
+	$swap_used = null;
 
 } else {
 
@@ -153,6 +153,7 @@ if (!empty($_GET["json"])) {
 	)));
 }
 
+$ringBase = 339.292;
 ?>
 <!doctype html>
 <html>
@@ -168,6 +169,7 @@ body {
 	flex-direction: column;
 	font-family: -apple-system, system-ui, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
 	background: <?php echo $color_bg; ?>;
+	overflow: hidden;
 }
 .main, .footer {
 	padding-left: 15%;
@@ -179,6 +181,7 @@ body {
 	display: flex;
 	flex-direction: column;
 	justify-content: center;
+	padding-top: 6.5rem;
 }
 .main h1 {
 	font-size: 4rem;
@@ -188,7 +191,7 @@ body {
 }
 .main p {
 	font-size: 2rem;
-	font-weight: normal;
+	font-weight: 300;
 	margin: 0;
 	color: <?php echo $color_text; ?>;
 }
@@ -205,8 +208,9 @@ a:hover, a:focus, a:active {
 
 .footer {
 	display: flex;
-	padding-top: 3rem;
-	padding-bottom: 3rem;
+	padding-top: 2rem;
+	padding-bottom: 2rem;
+	line-height: 2.5rem;
 	color: <?php echo $color_text; ?>;
 }
 .footer > div {
@@ -219,10 +223,25 @@ a:hover, a:focus, a:active {
 
 .ring {
 	transform: rotate(-90deg);
+	fill: none;
+	stroke-width: 12;
+	height: 2.5rem;
+	width: 2.5rem;
+	vertical-align: middle;
+}
+.ring-background {
+	stroke: rgba(127,127,127,0.15);
 }
 .ring-value {
-	stroke-dasharray: 339.292;
-	stroke-dashoffset: 339.292;
+	stroke: <?php echo $color_text; ?>;
+	stroke-dasharray: <?php echo $ringBase; ?>;
+}
+.ring-label {
+	transform: rotate(90deg);
+	transform-origin: 50% 50%;
+	fill: <?php echo $color_text; ?>;
+	text-anchor: middle;
+	alignment-baseline: central;
 }
 
 .overlay {
@@ -251,7 +270,7 @@ a:hover, a:focus, a:active {
 	background-color: <?php echo $color_text; ?>;
 	color: <?php echo $color_bg; ?>;
 
-	transform: translateY(130px);
+	transform: translateY(100%);
 	transition: transform .2s cubic-bezier(.15,.75,.55,1);
 }
 .details.open {
@@ -269,64 +288,6 @@ a:hover, a:focus, a:active {
 <?php echo $custom_css; ?>
 /* End: Custom CSS */
 </style>
-<script>
-function update() {
-	var xhr = new XMLHttpRequest();
-	xhr.addEventListener('load', function() {
-		data = JSON.parse(xhr.responseText);
-
-		// Update footer
-		document.getElementById('uptime').textContent = data.uptime;
-		document.getElementById('k-cpu').value = data.cpu; // TODO: reimplement in SVG
-		document.getElementById('k-memory').value = data.memory; // TODO: reimplement in SVG
-		if (data.swap_total) {
-			document.getElementById('k-swap').value = data.swap; // TODO: reimplement in SVG
-		}
-
-		// Update details
-		document.getElementById('dt-disk-used').textContent = Math.round(data.disk_used / 10485.76) / 100;
-		document.getElementById('dt-mem-used').textContent = data.memory_used;
-		document.getElementById('dt-num-cpus').textContent = data.num_cpus;
-		if (data.swap_total) {
-			document.getElementById('dt-swap_used').textContent = data.swap_used;
-		}
-
-		window.setTimeout(update, 3000);
-	});
-	xhr.open('POST', '<?php echo basename(__FILE__); ?>?json=1');
-	xhr.send();
-}
-// Show ring charts
-/*$("#k-disk, #k-memory, #k-swap, #k-cpu").knob({
-	readOnly: true,
-	width: 40,
-	height: 40,
-	thickness: 0.2,
-	fontWeight: 'normal',
-	bgColor: 'rgba(127,127,127,0.15)', // 50% grey with a low opacity, should work with most backgrounds
-	fgColor: '<?php echo $color_text; ?>'
-});*/
-
-// Start AJAX update loop
-update();
-
-document.getElementById('detail').addEventListener('click', function() {
-	let details = document.getElementsByClassName('details')[0];
-	details.classList.add('open');
-
-	let overlay = document.createElement('div');
-	overlay.className = 'overlay';
-	document.body.appendChild(overlay);
-});
-
-document.body.addEventListener('click', function(e) {
-	if (e.target.className == 'overlay') {
-		let details = document.getElementsByClassName('details')[0];
-		details.classList.remove('open');
-		e.target.remove();
-	}
-});
-</script>
 </head>
 <body>
 	<main class="main">
@@ -339,22 +300,40 @@ document.body.addEventListener('click', function(e) {
 		<?php } ?>
 		<div>
 			Disk usage:
-			<svg id="k-disk" class="ring" width="40" height="40" viewBox="0 0 120 120">
-				<circle cx="60" cy="60" r="54" fill="none" stroke="#e6e6e6" stroke-width="12" />
-				<circle class="ring-value" cx="60" cy="60" r="54" fill="none" stroke="#f77a52" stroke-width="12" />
+			<svg id="k-disk" class="ring" viewBox="0 0 120 120">
+				<circle class="ring-background" cx="60" cy="60" r="54" />
+				<circle class="ring-value" cx="60" cy="60" r="54" stroke-dashoffset="<?php echo $ringBase * (1 - ($disk/100)); ?>" />
+				<text class="ring-label" x="60" y="72" font-size="40"><?php echo $disk ?></text>
 			</svg>
-			<input id="k-disk" value="<?php echo $disk; ?>">
 		</div>
-		<div>Memory: <input id="k-memory" value="<?php echo $memory; ?>"></div>
-		<?php if ($swap_total !== "0") { ?>
-			<div>Swap: <input id="k-swap" value="<?php echo $swap; ?>"></div>
-		<?php } ?>
-		<div>CPU: <input id="k-cpu" value="0"></div>
 		<div>
-			<a class="right" id="detail">Detail</a>
+			Memory:
+			<svg id="k-memory" class="ring" viewBox="0 0 120 120">
+				<circle class="ring-background" cx="60" cy="60" r="54" />
+				<circle class="ring-value" cx="60" cy="60" r="54" stroke-dashoffset="<?php echo $ringBase * (1 - ($memory / 100)); ?>" />
+				<text class="ring-label" x="60" y="72" font-size="40"><?php echo $memory ?: null ?></text>
+			</svg>
+		</div>
+		<?php if ($swap_total !== null) { ?>
+			<div>
+				Swap:
+				<svg id="k-swap" class="ring" viewBox="0 0 120 120">
+					<circle class="ring-background" cx="60" cy="60" r="54" />
+					<circle class="ring-value" cx="60" cy="60" r="54" stroke-dashoffset="<?php echo $ringBase * (1 - ($swap / 100)); ?>" />
+					<text class="ring-label" x="60" y="72" font-size="40"><?php echo $swap ?></text>
+				</svg>
+			</div>
+		<?php } ?>
+		<div>
+			CPU:
+			<svg id="k-cpu" class="ring" viewBox="0 0 120 120">
+				<circle class="ring-background" cx="60" cy="60" r="54" />
+				<circle class="ring-value" cx="60" cy="60" r="54" stroke-dashoffset="<?php echo $ringBase; ?>" />
+				<text class="ring-label" x="60" y="72" font-size="40" />
+			</svg>
 		</div>
 		<div class="footer-end">
-			<a href="#" id="detail">Link</a>
+			<a href="#" id="detail">Detail</a>
 		</div>
 	</footer>
 	<div class="details" aria-hidden="true">
@@ -380,7 +359,7 @@ document.body.addEventListener('click', function(e) {
 		<div>
 			<b>Disk:</b> <span id="dt-disk-used"><?php echo round($disk_used / 1048576, 2); ?></span> GB / <?php echo round($disk_total / 1048576, 2); ?> GB<br>
 			<b>Memory:</b> <span id="dt-mem-used"><?php echo $mem_used; ?></span> MB / <?php echo $mem_total; ?> MB<br>
-			<?php if ($swap_total !== "0") { ?>
+			<?php if ($swap_total !== null) { ?>
 				<b>Swap:</b> <span id="dt-swap-used"><?php echo $swap_used ?></span> MB / <?php echo $swap_total ?> MB<br>
 			<?php } else { ?>
 				<b>Swap:</b> N/A<br>
@@ -388,5 +367,62 @@ document.body.addEventListener('click', function(e) {
 			<b>CPU Cores:</b> <span id="dt-num-cpus"></span>
 		</div>
 	</div>
+	<script>
+	var ringBase = parseFloat('<?php echo $ringBase; ?>');
+
+	function update() {
+		var xhr = new XMLHttpRequest();
+		xhr.addEventListener('load', function() {
+			data = JSON.parse(xhr.responseText);
+
+			// Update footer
+			if (document.getElementById('uptime')) {
+				document.getElementById('uptime').textContent = data.uptime;
+			}
+			document.querySelector('#k-cpu .ring-value').setAttribute('stroke-dashoffset', ringBase * (1 - (data.cpu / 100)));
+			document.querySelector('#k-cpu .ring-label').textContent = Math.round(data.cpu);
+			document.querySelector('#k-memory .ring-value').setAttribute('stroke-dashoffset', ringBase * (1 - (data.memory / 100)));
+			document.querySelector('#k-memory .ring-label').textContent = Math.round(data.memory);
+			if (data.swap_total) {
+				document.querySelector('#k-swap .ring-value').setAttribute('stroke-dashoffset', ringBase * (1 - (data.swap / 100)));
+				document.querySelector('#k-swap .ring-label').textContent = Math.round(data.swap);
+			}
+
+			// Update details
+			document.getElementById('dt-disk-used').textContent = Math.round(data.disk_used / 10485.76) / 100;
+			document.getElementById('dt-mem-used').textContent = data.memory_used;
+			document.getElementById('dt-num-cpus').textContent = data.num_cpus;
+			if (data.swap_total && document.getElementById('dt-swap-used')) {
+				document.getElementById('dt-swap-used').textContent = data.swap_used;
+			}
+
+			window.setTimeout(update, 3000);
+		});
+		xhr.open('POST', '<?php echo basename(__FILE__); ?>?json=1');
+		xhr.send();
+	}
+
+	// Start AJAX update loop
+	update();
+
+	// Bind events
+	document.getElementById('detail').addEventListener('click', function(e) {
+		let details = document.getElementsByClassName('details')[0];
+		details.classList.add('open');
+
+		let overlay = document.createElement('div');
+		overlay.className = 'overlay';
+		document.body.appendChild(overlay);
+
+		e.stopPropagation();
+	});
+	document.body.addEventListener('click', function(e) {
+		if (e.target.className == 'overlay') {
+			let details = document.getElementsByClassName('details')[0];
+			details.classList.remove('open');
+			e.target.remove();
+		}
+	});
+	</script>
 </body>
 </html>
