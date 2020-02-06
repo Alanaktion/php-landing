@@ -431,14 +431,14 @@ a:hover, a:focus, a:active {
 
 	// Bind events
 	document.getElementById('detail').addEventListener('click', function(e) {
+		e.preventDefault();
+
 		let details = document.getElementsByClassName('details')[0];
 		details.classList.add('open');
 
 		let overlay = document.createElement('div');
 		overlay.className = 'overlay';
 		document.body.appendChild(overlay);
-
-		e.stopPropagation();
 	});
 	document.body.addEventListener('click', function(e) {
 		if (e.target.className == 'overlay') {
