@@ -15,6 +15,9 @@ if (is_file("config.php")) {
 // Detect Windows systems
 $windows = defined("PHP_WINDOWS_VERSION_MAJOR");
 
+// Detect Mac systems
+$mac = PHP_OS == "Darwin";
+
 // Get system status
 if ($windows) {
 
@@ -40,26 +43,34 @@ if ($windows) {
 
 } else {
 
-	$initial_uptime = shell_exec("cut -d. -f1 /proc/uptime");
+	if ($mac) {
+		$initial_uptime = time() - rtrim(shell_exec("/usr/sbin/sysctl -n kern.boottime | awk '{print $4}'"), ",\n");
+	} else {
+		$initial_uptime = shell_exec("cut -d. -f1 /proc/uptime");
+	}
 	$days = floor($initial_uptime / 60 / 60 / 24);
 	$hours = $initial_uptime / 60 / 60 % 24;
 	$mins = $initial_uptime / 60 % 60;
 	$secs = $initial_uptime % 60;
 
-	if ($days > "0") {
+	if ($days > 0) {
 		$uptime = $days . "d " . $hours . "h";
-	} elseif ($days == "0" && $hours > "0") {
+	} elseif ($days == 0 && $hours > 0) {
 		$uptime = $hours . "h " . $mins . "m";
-	} elseif ($hours == "0" && $mins > "0") {
+	} elseif ($hours == 0 && $mins > 0) {
 		$uptime = $mins . "m " . $secs . "s";
-	} elseif ($mins < "0") {
+	} elseif ($mins < 0) {
 		$uptime = $secs . "s";
 	} else {
 		$uptime = "Error retreving uptime.";
 	}
 
 	// Check disk stats
-	$disk_result = shell_exec("df -P | grep /$");
+	if ($mac) {
+		$disk_result = shell_exec("df -P | grep /System/Volumes/Data$");
+	} else {
+		$disk_result = shell_exec("df -P | grep /$");
+	}
 	$disk_result = explode(" ", preg_replace("/\s+/", " ", $disk_result));
 
 	$disk_total = intval($disk_result[1]);
@@ -67,22 +78,33 @@ if ($windows) {
 	$disk = intval(rtrim($disk_result[4], "%"));
 
 	// Get current RAM and Swap stats
-	$meminfoStr = shell_exec('awk \'$3=="kB"{$2=$2/1024;$3=""} 1\' /proc/meminfo');
-	$mem = array();
-	foreach(explode("\n", trim($meminfoStr)) as $m) {
-		$m = explode(": ", $m, 2);
-		$mem[$m[0]] = trim($m[1]);
+	if ($mac) {
+		// TODO: get macOS memory usage in a reliable way
+		$memory = 0;
+		$mem_total = 0;
+		$mem_used = 0;
+
+		$swap = null;
+		$swap_total = null;
+		$swap_used = null;
+	} else {
+		$meminfoStr = shell_exec('awk \'$3=="kB"{$2=$2/1024;$3=""} 1\' /proc/meminfo');
+		$mem = array();
+		foreach(explode("\n", trim($meminfoStr)) as $m) {
+			$m = explode(": ", $m, 2);
+			$mem[$m[0]] = trim($m[1]);
+		}
+
+		// Calculate current RAM usage
+		$mem_total = round($mem['MemTotal']);
+		$mem_used = $mem_total - round($mem['MemFree']) - round($mem['Cached']);
+		$memory = round($mem_used / $mem_total * 100);
+
+		// Calculate current swap usage
+		$swap_total = round($mem['SwapTotal']);
+		$swap_used = $swap_total - round($mem['SwapFree']);
+		$swap = round($swap_used / $swap_total * 100);
 	}
-
-	// Calculate current RAM usage
-	$mem_total = round($mem['MemTotal']);
-	$mem_used = $mem_total - round($mem['MemFree']) - round($mem['Cached']);
-	$memory = round($mem_used / $mem_total * 100);
-
-	// Calculate current swap usage
-	$swap_total = round($mem['SwapTotal']);
-	$swap_used = $swap_total - round($mem['SwapFree']);
-	$swap = round($swap_used / $swap_total * 100);
 }
 
 if (!empty($_GET["json"])) {
@@ -99,6 +121,8 @@ if (!empty($_GET["json"])) {
 		$cpuinfo = file_get_contents("/proc/cpuinfo");
 		preg_match_all("/^processor/m", $cpuinfo, $matches);
 		$num_cpus = count($matches[0]);
+	} elseif ($mac) {
+		$num_cpus = intval(trim(shell_exec("/usr/sbin/sysctl -n hw.ncpu"))) ?: 1;
 	} else {
 		$process = @popen("sysctl -a", "rb");
 		if (false !== $process) {
