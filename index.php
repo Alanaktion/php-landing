@@ -62,7 +62,7 @@ if ($windows) {
 	} elseif ($mins < 0) {
 		$uptime = $secs . "s";
 	} else {
-		$uptime = "Error retreving uptime.";
+		$uptime = "Error retrieving uptime.";
 	}
 
 	// Check disk stats
@@ -79,17 +79,23 @@ if ($windows) {
 
 	// Get current RAM and Swap stats
 	if ($mac) {
-		// TODO: get macOS memory usage in a reliable way
-		$memory = 0;
-		$mem_total = 0;
-		$mem_used = 0;
+		// Calculate current RAM usage
+		preg_match('/([0-9]+) bytes/', shell_exec("vm_stat | grep 'page size'"), $matches);
+		$pageSize = !empty($matches[1]) ? intval($matches[1]) : 4096;
+		$free = shell_exec("vm_stat | grep free | awk '{ print \$3 }' | sed 's/\.//'") * $pageSize / 1024 / 1024;
+		$inactive = shell_exec("vm_stat | grep inactive | awk '{ print \$3 }' | sed 's/\.//'") * $pageSize / 1024 / 1024;
+		$mem_total = round(intval(trim(shell_exec("/usr/sbin/sysctl -n hw.memsize"))) / 1024 / 1024);
+		$mem_used = round($mem_total - $free - $inactive);
+		$memory = round($mem_used / $mem_total * 100);
 
-		$swap = null;
-		$swap_total = null;
-		$swap_used = null;
+		// Calculate current swap usage
+		$swapParts = explode('  ', shell_exec('/usr/sbin/sysctl -n vm.swapusage'));
+		$swap_total = round(trim(explode('=', $swapParts[0])[1], ' M'));
+		$swap_used = round(trim(explode('=', $swapParts[1])[1], ' M'));
+		$swap = round($swap_used / $swap_total * 100);
 	} else {
 		$meminfoStr = shell_exec('awk \'$3=="kB"{$2=$2/1024;$3=""} 1\' /proc/meminfo');
-		$mem = array();
+		$mem = [];
 		foreach(explode("\n", trim($meminfoStr)) as $m) {
 			$m = explode(": ", $m, 2);
 			$mem[$m[0]] = trim($m[1]);
@@ -109,6 +115,7 @@ if ($windows) {
 
 if (!empty($_GET["json"])) {
 	// Determine number of CPUs
+	$cpu_name = null;
 	$num_cpus = 1;
 	if ($windows) {
 		$process = @popen("wmic cpu get NumberOfCores", "rb");
@@ -121,7 +128,11 @@ if (!empty($_GET["json"])) {
 		$cpuinfo = file_get_contents("/proc/cpuinfo");
 		preg_match_all("/^processor/m", $cpuinfo, $matches);
 		$num_cpus = count($matches[0]);
+		if (preg_match("/^model name +: (.+)$/m", $cpuinfo, $matches)) {
+			$cpu_name = $matches[1];
+		}
 	} elseif ($mac) {
+		$cpu_name = trim(shell_exec("/usr/sbin/sysctl -n machdep.cpu.brand_string"));
 		$num_cpus = intval(trim(shell_exec("/usr/sbin/sysctl -n hw.ncpu"))) ?: 1;
 	} else {
 		$process = @popen("sysctl -a", "rb");
@@ -135,12 +146,14 @@ if (!empty($_GET["json"])) {
 		}
 	}
 
+	$arch = null;
 	if ($windows) {
 		// Get stats for Windows
 		$cpu = intval(trim(preg_replace("/[^0-9]+/","",shell_exec("wmic cpu get loadpercentage"))));
 		$memory_stats = explode(' ',trim(preg_replace("/\s+/"," ",preg_replace("/[^0-9 ]+/","",shell_exec("systeminfo | findstr Memory")))));
 		$memory = round($memory_stats[4] / $memory_stats[0] * 100);
 	} else {
+		$arch = trim(shell_exec('uname -m'));
 		// Get stats for linux using simplest/most accurate possible methods
 		if (is_file("mpstat")) {
 			$cpu = 100 - round(shell_exec("mpstat 1 2 | tail -n 1 | sed 's/.*\([0-9\.+]\{5\}\)$/\\1/'"));
@@ -161,12 +174,14 @@ if (!empty($_GET["json"])) {
 	}
 
 	header("Content-type: application/json");
-	exit(json_encode(array(
+	exit(json_encode([
 		"uptime" => $uptime,
 		"disk" => $disk,
 		"disk_total" => $disk_total,
 		"disk_used" => $disk_used,
 		"cpu" => $cpu,
+		"arch" => $arch,
+		"cpu_name" => $cpu_name,
 		"num_cpus" => $num_cpus,
 		"memory" => $memory,
 		"memory_total" => $mem_total,
@@ -174,7 +189,7 @@ if (!empty($_GET["json"])) {
 		"swap" => $swap,
 		"swap_total" => $swap_total,
 		"swap_used" => $swap_used,
-	)));
+	]));
 }
 
 $ringBase = 339.292;
@@ -232,6 +247,7 @@ a:hover, a:focus, a:active {
 
 .footer {
 	display: flex;
+	align-items: center;
 	padding-top: 2rem;
 	padding-bottom: 2rem;
 	line-height: 2.5rem;
@@ -245,13 +261,18 @@ a:hover, a:focus, a:active {
 	margin-right: 0;
 }
 
+.ring-container {
+	position: relative;
+	display: flex;
+	align-items: center;
+}
 .ring {
 	transform: rotate(-90deg);
 	fill: none;
 	stroke-width: 12;
 	height: 2.5rem;
 	width: 2.5rem;
-	vertical-align: middle;
+	margin-left: 0.25rem;
 }
 .ring-background {
 	stroke: rgba(127,127,127,0.15);
@@ -261,11 +282,14 @@ a:hover, a:focus, a:active {
 	stroke-dasharray: <?php echo $ringBase; ?>;
 }
 .ring-label {
-	transform: rotate(90deg);
-	transform-origin: 50% 50%;
+	position: absolute;
+	bottom: 0;
+	right: 0;
+	width: 40px;
+	line-height: 40px;
+	text-align: center;
 	fill: <?php echo $color_text; ?>;
-	text-anchor: middle;
-	alignment-baseline: central;
+	font-size: 0.85rem;
 }
 
 .overlay {
@@ -322,39 +346,39 @@ a:hover, a:focus, a:active {
 		<?php if (!$windows && !empty($uptime)) { ?>
 			<div>Uptime: <span id="uptime"><?php echo $uptime; ?></span></div>
 		<?php } ?>
-		<div>
+		<div class="ring-container" id="k-disk">
 			Disk usage:
-			<svg id="k-disk" class="ring" viewBox="0 0 120 120">
+			<svg class="ring" viewBox="0 0 120 120">
 				<circle class="ring-background" cx="60" cy="60" r="54" />
 				<circle class="ring-value" cx="60" cy="60" r="54" stroke-dashoffset="<?php echo $ringBase * (1 - ($disk/100)); ?>" />
-				<text class="ring-label" x="60" y="72" font-size="40"><?php echo $disk ?></text>
 			</svg>
+			<div class="ring-label" x="60" y="72"><?php echo $disk ?></div>
 		</div>
-		<div>
+		<div class="ring-container" id="k-memory">
 			Memory:
-			<svg id="k-memory" class="ring" viewBox="0 0 120 120">
+			<svg class="ring" viewBox="0 0 120 120">
 				<circle class="ring-background" cx="60" cy="60" r="54" />
 				<circle class="ring-value" cx="60" cy="60" r="54" stroke-dashoffset="<?php echo $ringBase * (1 - ($memory / 100)); ?>" />
-				<text class="ring-label" x="60" y="72" font-size="40"><?php echo $memory ?: null ?></text>
 			</svg>
+			<div class="ring-label" x="60" y="72"><?php echo $memory ?: null ?></div>
 		</div>
 		<?php if ($swap_total !== null) { ?>
-			<div>
+			<div class="ring-container" id="k-swap">
 				Swap:
-				<svg id="k-swap" class="ring" viewBox="0 0 120 120">
+				<svg class="ring" viewBox="0 0 120 120">
 					<circle class="ring-background" cx="60" cy="60" r="54" />
 					<circle class="ring-value" cx="60" cy="60" r="54" stroke-dashoffset="<?php echo $ringBase * (1 - ($swap / 100)); ?>" />
-					<text class="ring-label" x="60" y="72" font-size="40"><?php echo $swap ?></text>
 				</svg>
+				<div class="ring-label" x="60" y="72"><?php echo $swap ?></div>
 			</div>
 		<?php } ?>
-		<div>
+		<div class="ring-container" id="k-cpu">
 			CPU:
-			<svg id="k-cpu" class="ring" viewBox="0 0 120 120">
+			<svg class="ring" viewBox="0 0 120 120">
 				<circle class="ring-background" cx="60" cy="60" r="54" />
 				<circle class="ring-value" cx="60" cy="60" r="54" stroke-dashoffset="<?php echo $ringBase; ?>" />
-				<text class="ring-label" x="60" y="72" font-size="40" />
 			</svg>
+			<div class="ring-label" x="60" y="72"></div>
 		</div>
 		<div class="footer-end">
 			<a href="#" id="detail">Detail</a>
@@ -388,7 +412,7 @@ a:hover, a:focus, a:active {
 			<?php } else { ?>
 				<b>Swap:</b> N/A<br>
 			<?php }?>
-			<b>CPU Cores:</b> <span id="dt-num-cpus"></span>
+			<b>CPU Threads:</b> <span id="dt-num-cpus"></span>
 		</div>
 	</div>
 	<script>
@@ -415,7 +439,14 @@ a:hover, a:focus, a:active {
 			// Update details
 			document.getElementById('dt-disk-used').textContent = Math.round(data.disk_used / 10485.76) / 100;
 			document.getElementById('dt-mem-used').textContent = data.memory_used;
-			document.getElementById('dt-num-cpus').textContent = data.num_cpus;
+			if (data.arch) {
+				document.getElementById('dt-num-cpus').textContent = data.num_cpus + ' (' + data.arch + ')';
+			} else {
+				document.getElementById('dt-num-cpus').textContent = data.num_cpus;
+			}
+			if (data.cpu_name) {
+				document.getElementById('dt-num-cpus').setAttribute('title', data.cpu_name);
+			}
 			if (data.swap_total && document.getElementById('dt-swap-used')) {
 				document.getElementById('dt-swap-used').textContent = data.swap_used;
 			}
