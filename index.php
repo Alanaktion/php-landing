@@ -92,7 +92,7 @@ if ($windows) {
 		$swapParts = explode('  ', shell_exec('/usr/sbin/sysctl -n vm.swapusage'));
 		$swap_total = round(trim(explode('=', $swapParts[0])[1], ' M'));
 		$swap_used = round(trim(explode('=', $swapParts[1])[1], ' M'));
-		$swap = round($swap_used / $swap_total * 100);
+		$swap = $swap_total ? round($swap_used / $swap_total * 100) : 0;
 	} else {
 		$meminfoStr = shell_exec('awk \'$3=="kB"{$2=$2/1024;$3=""} 1\' /proc/meminfo');
 		$mem = [];
@@ -109,7 +109,7 @@ if ($windows) {
 		// Calculate current swap usage
 		$swap_total = round($mem['SwapTotal']);
 		$swap_used = $swap_total - round($mem['SwapFree']);
-		$swap = round($swap_used / $swap_total * 100);
+		$swap = $swap_total ? round($swap_used / $swap_total * 100) : 0;
 	}
 }
 
