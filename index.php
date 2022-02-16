@@ -49,9 +49,9 @@ if ($windows) {
 		$initial_uptime = shell_exec("cut -d. -f1 /proc/uptime");
 	}
 	$days = floor($initial_uptime / 60 / 60 / 24);
-	$hours = $initial_uptime / 60 / 60 % 24;
-	$mins = $initial_uptime / 60 % 60;
-	$secs = $initial_uptime % 60;
+	$hours = floor($initial_uptime / 60 / 60) % 24;
+	$mins = floor($initial_uptime / 60) % 60;
+	$secs = floor($initial_uptime) % 60;
 
 	if ($days > 0) {
 		$uptime = $days . "d " . $hours . "h";
@@ -395,7 +395,7 @@ a:hover, a:focus, a:active {
 						$version = $version_arr[0];
 					} else {
 						$version_cmd = shell_exec("lsb_release -d");
-						if (strpos($version_cmd, "Description") === 0) {
+						if ($version_cmd && strpos($version_cmd, "Description") === 0) {
 							$version = preg_replace("/^Description:\\s/", "", $version_cmd);
 						}
 					}
